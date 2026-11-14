@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>لوحة التحكم | yala-eg</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--o:#ff7a00;--bg:#0b0b0b;--card:#161616;--line:#2a2a2a;--tx:#f5f5f5;--mu:#a8a8a8}
+*{box-sizing:border-box;margin:0}
+body{font-family:'Cairo',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--tx);line-height:1.7;padding:18px}
+.w{max-width:980px;margin:auto}h1{font-size:24px;margin-bottom:14px}h1 b{color:var(--o)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
+input,textarea{width:100%;background:#101010;border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:9px 12px;font:inherit;margin:3px 0 10px}
+label{font-weight:700;font-size:14px}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}@media(max-width:600px){.g{grid-template-columns:1fr}}
+.btn{padding:9px 20px;border-radius:10px;border:2px solid var(--o);background:var(--o);color:#111;font:700 15px 'Cairo',sans-serif;cursor:pointer}
+.btn.s{background:none;color:var(--o)}.btn.d{background:none;border-color:#e0405a;color:#e0405a}.btn.sm{padding:3px 12px;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:start}
+.tw{overflow-x:auto}.mu{color:var(--mu)}.err{color:#ff6b81;min-height:24px}.ok{color:#5bd68a}
+.pill{padding:1px 10px;border-radius:99px;font-size:12px;background:#333}.pill.z{background:#7a1f2c}
+[hidden]{display:none!important}
+</style>
+</head>
+<body><div class="w">
+<h1>لوحة تحكم <b>yala-eg</b></h1>
+
+<div class="card" id="login" hidden>
+  <h3>دخول المشرف</h3>
+  <label>الإيميل</label><input id="em" type="email" autocomplete="username" dir="ltr">
+  <label>الباسورد</label><input id="pw" type="password" autocomplete="current-password" dir="ltr">
+  <button class="btn" id="go">دخول</button>
+  <div class="err" id="le"></div>
+</div>
+
+<div id="panel" hidden>
+  <div class="top card"><span class="mu" id="who"></span><button class="btn s sm" id="out">تسجيل خروج</button></div>
+
+  <div class="card">
+    <h3 id="ft">إضافة منتج</h3>
+    <form id="f">
+      <div class="g">
+        <div><label>اسم المنتج *</label><input id="name" required></div>
+        <div><label>التصنيف</label><input id="cat"></div>
+        <div><label>السعر الحالي *</label><input id="price" type="number" min="0" step="any" required></div>
+        <div><label>السعر قبل الخصم</label><input id="old_price" type="number" min="0" step="any"></div>
+        <div><label>الكمية المتاحة *</label><input id="stock" type="number" min="0" step="1" required value="1"></div>
+        <div><label>اسم التاجر/البائع</label><input id="merchant_name"></div>
+        <div><label>نهاية العرض (اختياري)</label><input id="offer_end" type="datetime-local"></div>
+        <div><label>رابط الصورة (ImageKit) أو اسم الملف</label><input id="image_url" dir="ltr"></div>
+      </div>
+      <label>الوصف</label><textarea id="desc" rows="3"></textarea>
+      <div class="row"><button class="btn" id="sv">حفظ</button><button type="button" class="btn s" id="cl">مسح / إلغاء التعديل</button></div>
+      <div class="err" id="fe"></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>المنتجات (<span id="cnt">0</span>)</h3>
+    <div class="tw"><table><thead><tr><th>الاسم</th><th>السعر</th><th>الكمية</th><th>التاجر</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>
+  </div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="products.js"></script>
+<script>
+const $=id=>document.getElementById(id),sb=window.sb;
+const F=["name","cat","price","old_price","stock","merchant_name","offer_end","image_url","desc"];
+let editId=null,rows=[];
+const msg=(id,t,ok)=>{$(id).textContent=t||"";$(id).className="err"+(ok?" ok":"")};
+function show(logged){$("login").hidden=logged;$("panel").hidden=!logged}
+async function init(){
+  if(!sb){show(false);msg("le","Supabase مش مظبوط. حط رابط المشروع الكامل في products.js");return}
+  const{data}=await sb.auth.getSession();
+  if(data.session){$("who").textContent="داخل كـ "+data.session.user.email;show(true);load()}else show(false)
+}
+$("go").onclick=async()=>{
+  msg("le","");const{data,error}=await sb.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});
+  if(error)return msg("le","بيانات الدخول غلط");
+  $("pw").value="";$("who").textContent="داخل كـ "+data.user.email;show(true);load()};
+$("out").onclick=async()=>{await sb.auth.signOut();show(false)};
+async function load(){
+  const{data,error}=await sb.from("products").select("*").order("id",{ascending:false});
+  if(error)return msg("fe",error.message);
+  rows=data;$("cnt").textContent=rows.length;
+  $("tb").innerHTML="";
+  rows.forEach(r=>{
+    const tr=document.createElement("tr");
+    const c=(t)=>{const td=document.createElement("td");td.textContent=t;tr.appendChild(td);return td};
+    c(r.name);c(r.price+" ج.م");
+    const st=c("");const p=document.createElement("span");p.className="pill"+(r.stock<=0?" z":"");p.textContent=r.stock<=0?"نفد":r.stock;st.appendChild(p);
+    c(r.merchant_name||r.seller||"-");
+    const a=c("");
+    const eb=document.createElement("button");eb.className="btn s sm";eb.textContent="تعديل";eb.onclick=()=>edit(r.id);
+    const db=document.createElement("button");db.className="btn d sm";db.textContent="حذف";db.style.marginInlineStart="6px";db.onclick=()=>del(r.id);
+    a.append(eb,db);$("tb").appendChild(tr)})}
+function edit(id){
+  const r=rows.find(x=>x.id===id);editId=id;$("ft").textContent="تعديل: "+r.name;
+  F.forEach(k=>{let v=r[k];if(k==="offer_end"&&v){const d=new Date(v);v=new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,16)}$(k).value=v==null?"":v});
+  scrollTo(0,0)}
+function reset(){editId=null;$("f").reset();$("stock").value=1;$("ft").textContent="إضافة منتج";msg("fe","")}
+$("cl").onclick=reset;
+$("f").onsubmit=async ev=>{
+  ev.preventDefault();msg("fe","");
+  const g=k=>$(k).value.trim();
+  const m=g("merchant_name");
+  const o={name:g("name"),cat:g("cat")||null,price:+g("price"),old_price:g("old_price")?+g("old_price"):null,stock:parseInt(g("stock"),10)||0,
+    merchant_name:m||null,seller:m||null,image_url:g("image_url")||null,desc:g("desc")||null,
+    offer_end:g("offer_end")?new Date(g("offer_end")).toISOString():null};
+  const q=editId?sb.from("products").update(o).eq("id",editId):sb.from("products").insert(o);
+  const{data,error}=await q.select();
+  if(error)return msg("fe",error.message);
+  if(!data||!data.length)return msg("fe","ما اتحفظش: الحساب ده مش مصرّح له (راجع سياسات RLS).");
+  msg("fe","اتحفظ ✔",true);reset();msg("fe","اتحفظ ✔",true);load()};
+async function del(id){
+  if(!confirm("متأكد إنك عايز تحذف المنتج ده؟"))return;
+  const{data,error}=await sb.from("products").delete().eq("id",id).select();
+  if(error)return msg("fe",error.message);
+  if(!data||!data.length)return msg("fe","ما اتحذفش: الحساب ده مش مصرّح له (راجع سياسات RLS).");
+  load()}
+init();
+</script>
+</body></html>
