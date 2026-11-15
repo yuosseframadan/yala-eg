@@ -1,126 +1,159 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex,nofollow">
-<title>لوحة التحكم | yala-eg</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>لوحة التحكم | yala-eg</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
-<style>
-:root{--o:#ff7a00;--bg:#0b0b0b;--card:#161616;--line:#2a2a2a;--tx:#f5f5f5;--mu:#a8a8a8}
-*{box-sizing:border-box;margin:0}
-body{font-family:'Cairo',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--tx);line-height:1.7;padding:18px}
-.w{max-width:980px;margin:auto}h1{font-size:24px;margin-bottom:14px}h1 b{color:var(--o)}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
-input,textarea{width:100%;background:#101010;border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:9px 12px;font:inherit;margin:3px 0 10px}
-label{font-weight:700;font-size:14px}
-.g{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}@media(max-width:600px){.g{grid-template-columns:1fr}}
-.btn{padding:9px 20px;border-radius:10px;border:2px solid var(--o);background:var(--o);color:#111;font:700 15px 'Cairo',sans-serif;cursor:pointer}
-.btn.s{background:none;color:var(--o)}.btn.d{background:none;border-color:#e0405a;color:#e0405a}.btn.sm{padding:3px 12px;font-size:13px}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
-table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:start}
-.tw{overflow-x:auto}.mu{color:var(--mu)}.err{color:#ff6b81;min-height:24px}.ok{color:#5bd68a}
-.pill{padding:1px 10px;border-radius:99px;font-size:12px;background:#333}.pill.z{background:#7a1f2c}
-[hidden]{display:none!important}
-</style>
+<link rel="stylesheet" href="panel.css">
 </head>
 <body><div class="w">
-<h1>لوحة تحكم <b>yala-eg</b></h1>
-
+<h1>لوحة تحكم <b>yala-eg</b></h1><div id="m"></div>
 <div class="card" id="login" hidden>
   <h3>دخول المشرف</h3>
   <label>الإيميل</label><input id="em" type="email" autocomplete="username" dir="ltr">
   <label>الباسورد</label><input id="pw" type="password" autocomplete="current-password" dir="ltr">
-  <button class="btn" id="go">دخول</button>
-  <div class="err" id="le"></div>
+  <button class="btn" id="go">دخول</button><div class="err" id="le"></div>
 </div>
-
 <div id="panel" hidden>
   <div class="top card"><span class="mu" id="who"></span><button class="btn s sm" id="out">تسجيل خروج</button></div>
+  <div class="tabs" id="tabs"><button data-t="products" class="on">المنتجات</button><button data-t="sellers">البائعين</button><button data-t="acc">الحسابات والأرباح</button><button data-t="orders">الطلبات</button></div>
 
-  <div class="card">
-    <h3 id="ft">إضافة منتج</h3>
-    <form id="f">
-      <div class="g">
-        <div><label>اسم المنتج *</label><input id="name" required></div>
-        <div><label>التصنيف</label><input id="cat"></div>
-        <div><label>السعر الحالي *</label><input id="price" type="number" min="0" step="any" required></div>
-        <div><label>السعر قبل الخصم</label><input id="old_price" type="number" min="0" step="any"></div>
-        <div><label>الكمية المتاحة *</label><input id="stock" type="number" min="0" step="1" required value="1"></div>
-        <div><label>اسم التاجر/البائع</label><input id="merchant_name"></div>
-        <div><label>نهاية العرض (اختياري)</label><input id="offer_end" type="datetime-local"></div>
-        <div><label>رابط الصورة (ImageKit) أو اسم الملف</label><input id="image_url" dir="ltr"></div>
-      </div>
-      <label>الوصف</label><textarea id="desc" rows="3"></textarea>
-      <div class="row"><button class="btn" id="sv">حفظ</button><button type="button" class="btn s" id="cl">مسح / إلغاء التعديل</button></div>
-      <div class="err" id="fe"></div>
-    </form>
+  <div id="products" class="pane">
+    <div class="card"><h3 id="ft">إضافة منتج</h3><div id="pfw"></div></div>
+    <div class="card"><div class="row"><input id="q" placeholder="🔍 بحث بالاسم أو التاجر أو التصنيف" style="flex:1"><span class="mu"><b id="cnt">0</b> منتج</span></div>
+      <div class="tw"><table><thead><tr><th></th><th>المنتج</th><th>السعر</th><th>الكمية</th><th>التاجر</th><th></th></tr></thead><tbody id="tb"></tbody></table></div></div>
   </div>
 
-  <div class="card">
-    <h3>المنتجات (<span id="cnt">0</span>)</h3>
-    <div class="tw"><table><thead><tr><th>الاسم</th><th>السعر</th><th>الكمية</th><th>التاجر</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>
+  <div id="sellers" class="pane" hidden>
+    <div class="card"><h3>إضافة بائع جديد</h3>
+      <form id="sf"><div class="g">
+        <div><label>اسم المحل / البراند *</label><input id="s_brand" required></div>
+        <div><label>اسم صاحب المحل</label><input id="s_owner"></div>
+        <div><label>البريد الإلكتروني *</label><input id="s_email" type="email" required dir="ltr"></div>
+        <div><label>رقم الهاتف (واتساب) *</label><input id="s_phone" type="tel" required dir="ltr" placeholder="01xxxxxxxxx"></div>
+        <div><label>كلمة المرور * (6 حروف+)</label><input id="s_pw" required minlength="6" dir="ltr"></div>
+        <div><label>رابط اللوجو</label><input id="s_logo" dir="ltr"></div>
+        <div><label>الباقة *</label><select id="s_plan"></select></div>
+        <div><label>تاريخ انتهاء الباقة</label><input id="s_end" type="date"></div>
+      </div><button class="btn">إنشاء حساب البائع</button></form></div>
+    <div class="card tw"><table><thead><tr><th>البائع</th><th>تواصل</th><th>الباقة</th><th>تنتهي</th><th>المنتجات</th><th>الحالة</th><th></th></tr></thead><tbody id="stb"></tbody></table></div>
   </div>
-</div>
-</div>
+
+  <div id="acc" class="pane" hidden></div>
+  <div id="orders" class="pane" hidden></div>
+</div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <script src="products.js"></script>
 <script>
-const $=id=>document.getElementById(id),sb=window.sb;
-const F=["name","cat","price","old_price","stock","merchant_name","offer_end","image_url","desc"];
-let editId=null,rows=[];
-const msg=(id,t,ok)=>{$(id).textContent=t||"";$(id).className="err"+(ok?" ok":"")};
-function show(logged){$("login").hidden=logged;$("panel").hidden=!logged}
+const $=id=>document.getElementById(id),sb=window.sb,E=esc,fm=n=>Math.round(n*100)/100;
+let MS=[],PR=[],OI=[],OR=[],PAY=[],editId=null,mt;
+function msg(t){const m=$("m");m.textContent=t;clearTimeout(mt);mt=setTimeout(()=>m.textContent="",4500)}
+function show(l){$("login").hidden=l;$("panel").hidden=!l}
 async function init(){
-  if(!sb){show(false);msg("le","Supabase مش مظبوط. حط رابط المشروع الكامل في products.js");return}
+  if(!sb){show(false);$("le").textContent="تعذر تحميل مكتبة Supabase (النت؟). حدّث الصفحة.";return}
   const{data}=await sb.auth.getSession();
-  if(data.session){$("who").textContent="داخل كـ "+data.session.user.email;show(true);load()}else show(false)
-}
+  if(data.session)enter(data.session.user);else show(false)}
+function enter(u){
+  if(u.id!==ADMIN_UID){sb.auth.signOut();show(false);$("le").textContent="الحساب ده مش حساب المشرف";return}
+  $("who").textContent="داخل كـ "+u.email;show(true);boot()}
 $("go").onclick=async()=>{
-  msg("le","");const{data,error}=await sb.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});
-  if(error)return msg("le","بيانات الدخول غلط");
-  $("pw").value="";$("who").textContent="داخل كـ "+data.user.email;show(true);load()};
+  $("le").textContent="";if(!sb)return $("le").textContent="Supabase مش متصل";
+  const{data,error}=await sb.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});
+  if(error)return $("le").textContent="بيانات الدخول غلط: "+error.message;
+  $("pw").value="";enter(data.user)};
 $("out").onclick=async()=>{await sb.auth.signOut();show(false)};
+$("tabs").onclick=ev=>{const t=ev.target.dataset.t;if(!t)return;
+  document.querySelectorAll(".pane").forEach(p=>p.hidden=p.id!==t);document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t))};
+
+function boot(){
+  $("pfw").innerHTML=PF.html(true);PF.bind();
+  $("s_plan").innerHTML=Object.entries(PLANS).map(([k,p])=>`<option value="${k}">${p.n} — ${p.max===Infinity?"∞":p.max} منتج، ${p.fee} ج/شهر${p.rate?"، عمولة "+p.rate*100+"%":""}</option>`).join("");
+  $("s_end").value=new Date(Date.now()+30*864e5).toISOString().slice(0,10);
+  $("pf").onsubmit=saveP;$("p_cl").onclick=resetP;load()}
 async function load(){
-  const{data,error}=await sb.from("products").select("*").order("id",{ascending:false});
-  if(error)return msg("fe",error.message);
-  rows=data;$("cnt").textContent=rows.length;
-  $("tb").innerHTML="";
-  rows.forEach(r=>{
-    const tr=document.createElement("tr");
-    const c=(t)=>{const td=document.createElement("td");td.textContent=t;tr.appendChild(td);return td};
-    c(r.name);c(r.price+" ج.م");
-    const st=c("");const p=document.createElement("span");p.className="pill"+(r.stock<=0?" z":"");p.textContent=r.stock<=0?"نفد":r.stock;st.appendChild(p);
-    c(r.merchant_name||r.seller||"-");
-    const a=c("");
-    const eb=document.createElement("button");eb.className="btn s sm";eb.textContent="تعديل";eb.onclick=()=>edit(r.id);
-    const db=document.createElement("button");db.className="btn d sm";db.textContent="حذف";db.style.marginInlineStart="6px";db.onclick=()=>del(r.id);
-    a.append(eb,db);$("tb").appendChild(tr)})}
-function edit(id){
-  const r=rows.find(x=>x.id===id);editId=id;$("ft").textContent="تعديل: "+r.name;
-  F.forEach(k=>{let v=r[k];if(k==="offer_end"&&v){const d=new Date(v);v=new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,16)}$(k).value=v==null?"":v});
-  scrollTo(0,0)}
-function reset(){editId=null;$("f").reset();$("stock").value=1;$("ft").textContent="إضافة منتج";msg("fe","")}
-$("cl").onclick=reset;
-$("f").onsubmit=async ev=>{
-  ev.preventDefault();msg("fe","");
-  const g=k=>$(k).value.trim();
-  const m=g("merchant_name");
-  const o={name:g("name"),cat:g("cat")||null,price:+g("price"),old_price:g("old_price")?+g("old_price"):null,stock:parseInt(g("stock"),10)||0,
-    merchant_name:m||null,seller:m||null,image_url:g("image_url")||null,desc:g("desc")||null,
-    offer_end:g("offer_end")?new Date(g("offer_end")).toISOString():null};
-  const q=editId?sb.from("products").update(o).eq("id",editId):sb.from("products").insert(o);
-  const{data,error}=await q.select();
-  if(error)return msg("fe",error.message);
-  if(!data||!data.length)return msg("fe","ما اتحفظش: الحساب ده مش مصرّح له (راجع سياسات RLS).");
-  msg("fe","اتحفظ ✔",true);reset();msg("fe","اتحفظ ✔",true);load()};
-async function del(id){
-  if(!confirm("متأكد إنك عايز تحذف المنتج ده؟"))return;
-  const{data,error}=await sb.from("products").delete().eq("id",id).select();
-  if(error)return msg("fe",error.message);
-  if(!data||!data.length)return msg("fe","ما اتحذفش: الحساب ده مش مصرّح له (راجع سياسات RLS).");
-  load()}
+  const r=await Promise.all([sb.from("merchants").select("*").order("id"),sb.from("products").select("*").order("id",{ascending:false}),
+    sb.from("shop_order_items").select("*"),sb.from("shop_orders").select("*").order("id",{ascending:false}).limit(80),sb.from("shop_payments").select("*")]);
+  const bad=r.find(x=>x.error);if(bad)msg("خطأ تحميل: "+bad.error.message+" (شغّل supabase-schema.sql؟)");
+  [MS,PR,OI,OR,PAY]=r.map(x=>x.data||[]);
+  PF.merchantsSel(MS);renderP();renderS();renderA();renderO()}
+
+/* ===== المنتجات ===== */
+const nz=s=>String(s||"").toLowerCase().replace(/[\u064B-\u065F\u0640]/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه");
+function renderP(){
+  const ts=nz($("q").value).split(/\s+/).filter(Boolean);
+  const r=PR.filter(p=>{const h=nz([p.name,p.merchant_name,p.cat,p.price].join(" "));return ts.every(t=>h.includes(t))});
+  $("cnt").textContent=r.length;$("tb").innerHTML=PF.rows(r,true)||'<tr><td colspan="6" class="mu">مفيش منتجات</td></tr>'}
+$("q").oninput=renderP;
+$("tb").onclick=PF.onTable(sb,()=>PR,load,async r=>{
+  editId=r.id;$("ft").textContent="تعديل: "+r.name;let u="";
+  if(r.is_digital){const d=await sb.from("digital_links").select("url").eq("product_id",r.id).maybeSingle();u=d.data?d.data.url:""}
+  PF.fill(r,u);scrollTo(0,0)},msg);
+function resetP(){editId=null;$("pf").reset();$("p_stock").value=1;$("p_prev").hidden=true;$("p_digw").hidden=true;$("ft").textContent="إضافة منتج"}
+async function saveP(ev){
+  ev.preventDefault();const x=PF.read(true);if(x.err)return msg(x.err);
+  const s=await PF.save(sb,editId,x.row,x.durl);if(s.err)return msg(s.err);
+  msg("اتحفظ ✔");resetP();load()}
+
+/* ===== البائعين ===== */
+const cnt=m=>PR.filter(p=>p.merchant_id===m.id).length,lim=m=>PLANS[m.plan]?PLANS[m.plan].max:15;
+function renderS(){
+  $("stb").innerHTML=MS.map(m=>{
+    const end=m.plan_end?new Date(m.plan_end):null,days=end?Math.ceil((end-Date.now())/864e5):null;
+    const ec=days==null?"":days<0?"bad":days<=7?"z":"g2";
+    return`<tr><td>${m.logo_url?`<img class="th" src="${E(imgSrc(m.logo_url))}" onerror="this.style.visibility='hidden'" alt=""> `:""}<b>${E(m.name)}</b><small class="mu">${E(m.owner_name||"")}</small></td>
+<td dir="ltr">${E(m.phone||"")}<small class="mu">${E(m.email||"")}</small></td>
+<td><select data-a="plan" data-id="${m.id}">${Object.entries(PLANS).map(([k,p])=>`<option value="${k}"${m.plan===k?" selected":""}>${p.n}</option>`).join("")}</select></td>
+<td>${end?`<span class="pill ${ec}">${end.toLocaleDateString("ar-EG")} ${days<0?"(منتهية)":"("+days+" يوم)"}</span>`:"—"}</td>
+<td>${cnt(m)} / ${lim(m)===Infinity?"∞":lim(m)}</td>
+<td><span class="pill ${m.is_active?"g2":"z"}">${m.is_active?"شغال":"موقوف"}</span></td>
+<td class="act"><button class="btn s sm" data-a="renew" data-id="${m.id}">تجديد 30 يوم</button><button class="btn s sm" data-a="tog" data-id="${m.id}">${m.is_active?"إيقاف مؤقت":"تفعيل"}</button><button class="btn d sm" data-a="delm" data-id="${m.id}">حذف</button></td></tr>`}).join("")||'<tr><td colspan="7" class="mu">مفيش بائعين</td></tr>'}
+async function mu(id,patch){const{data,error}=await sb.from("merchants").update(patch).eq("id",id).select("id");if(error||!data.length)return msg(error?error.message:"مفيش صلاحية");load()}
+$("stb").onclick=async ev=>{
+  const b=ev.target.closest("button[data-a]");if(!b)return;const id=+b.dataset.id,m=MS.find(x=>x.id===id),a=b.dataset.a;
+  if(a==="renew"){const base=m.plan_end&&new Date(m.plan_end)>Date.now()?new Date(m.plan_end):new Date();base.setDate(base.getDate()+30);mu(id,{plan_end:base.toISOString()})}
+  else if(a==="tog")mu(id,{is_active:!m.is_active});
+  else if(a==="delm"){if(!confirm("حذف البائع "+m.name+" وكل منتجاته نهائياً؟"))return;
+    const{error}=await sb.from("merchants").delete().eq("id",id);if(error)return msg(error.message);msg("اتحذف (حساب الدخول نفسه امسحه من Supabase > Authentication > Users)");load()}};
+$("stb").onchange=ev=>{const s=ev.target;if(s.dataset.a==="plan")mu(+s.dataset.id,{plan:s.value})};
+$("sf").onsubmit=async ev=>{
+  ev.preventDefault();const v=id=>$(id).value.trim(),email=v("s_email").toLowerCase();
+  const tmp=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  const{data,error}=await tmp.auth.signUp({email,password:v("s_pw")});
+  if(error)return msg("فشل إنشاء الحساب: "+error.message+" — فعّل Allow new users to sign up وقفل Confirm email من إعدادات Auth");
+  if(!data.user||(data.user.identities&&!data.user.identities.length))return msg("الإيميل ده مستخدم قبل كده");
+  const{error:e2}=await sb.from("merchants").insert({user_id:data.user.id,name:v("s_brand"),owner_name:v("s_owner")||null,logo_url:v("s_logo")||null,email,phone:v("s_phone"),plan:$("s_plan").value,plan_end:v("s_end")?new Date(v("s_end")+"T23:59:59").toISOString():null});
+  if(e2)return msg(e2.message);msg("اتضاف البائع ✔ (ابعتله الإيميل والباسورد ورابط brand.html)");$("sf").reset();$("s_end").value=new Date(Date.now()+30*864e5).toISOString().slice(0,10);load()};
+
+/* ===== الحسابات والأرباح ===== */
+function renderA(){
+  const done=OI,S={};done.forEach(i=>{const k=i.merchant_id||0;S[k]=(S[k]||0)+i.price*i.qty});
+  const rate=m=>PLANS[m.plan]?PLANS[m.plan].rate:0,paid=m=>PAY.filter(p=>p.merchant_id===m.id).reduce((a,p)=>a+ +p.amount,0);
+  const tot=Object.values(S).reduce((a,b)=>a+b,0),comm=MS.reduce((a,m)=>a+(S[m.id]||0)*rate(m),0),own=S[0]||0;
+  const subs=MS.filter(m=>m.is_active).reduce((a,m)=>a+(PLANS[m.plan]?PLANS[m.plan].fee:0),0);
+  const units=PR.reduce((a,p)=>a+Math.max(0,p.stock),0);
+  $("acc").innerHTML=`<div class="stats"><div><b>${fm(tot)}</b>إجمالي المبيعات</div><div><b>${fm(own)}</b>مبيعات منتجاتي</div><div><b>${fm(comm)}</b>عمولات من البائعين</div><div><b>${fm(own+comm)}</b>ربحي من المبيعات</div><div><b>${subs}</b>اشتراكات شهرية متوقعة</div><div><b>${PR.length}</b>منتج (${units} قطعة متوفرة)</div><div><b>${OR.filter(o=>o.status==="new").length}</b>طلبات جديدة</div></div>
+<div class="card tw"><h3>حساب البائعين</h3><table><thead><tr><th>البائع</th><th>الباقة</th><th>باع بـ</th><th>نسبتي</th><th>ليا عنده</th><th>سدّد</th><th>المتبقي</th><th></th></tr></thead><tbody>${MS.map(m=>{const s=S[m.id]||0,d=s*rate(m),p=paid(m);
+    return`<tr><td>${E(m.name)}</td><td>${PLANS[m.plan]?PLANS[m.plan].n:m.plan}</td><td>${fm(s)}</td><td>${rate(m)*100}%</td><td>${fm(d)}</td><td>${fm(p)}</td><td><b>${fm(d-p)}</b></td><td><button class="btn s sm" data-a="pay" data-id="${m.id}">سدّد</button></td></tr>`}).join("")||'<tr><td colspan="8" class="mu">مفيش بائعين</td></tr>'}</tbody></table>
+<small class="mu">أي طلب بيتحسب تلقائياً أول ما الزبون يطلب، وإنت بس اللي تقدر تحذفه من تبويب الطلبات. رسوم الاشتراك الشهري بتتجدد من تبويب البائعين.</small></div>`}
+$("acc").onclick=async ev=>{
+  const b=ev.target.closest("[data-a=pay]");if(!b)return;const id=+b.dataset.id,m=MS.find(x=>x.id===id);
+  const a=parseFloat(prompt("المبلغ اللي "+m.name+" سدّده (ج.م)"));if(!(a>0))return;
+  const{error}=await sb.from("shop_payments").insert({merchant_id:id,amount:a,note:"سداد"});error?msg(error.message):(msg("اتسجل السداد ✔"),load())};
+
+/* ===== الطلبات ===== */
+function renderO(){
+  const mn=id=>id?(MS.find(m=>m.id===id)||{name:"(محذوف)"}).name:"yala-eg";
+  $("orders").innerHTML=OR.map(o=>{const it=OI.filter(i=>i.order_id===o.id);
+    return`<div class="ord"><div class="row"><b>#${o.id}</b><span>${E(o.name)}</span><span dir="ltr">${E(o.phone)}</span><span class="pill ${o.status==="done"?"g2":""}">${o.status==="done"?"تم التسليم":"جديد"}</span><span class="mu">${new Date(o.created_at).toLocaleString("ar-EG")}</span></div>
+<div class="mu">${E(o.address||"")} ${o.note?"· "+E(o.note):""}</div>
+${it.map(i=>`<div class="row"><span>${i.is_digital?"📥":"🛒"} ${E(i.name)} × ${i.qty} = ${fm(i.price*i.qty)}</span><span class="mu">(${E(mn(i.merchant_id))})</span><span class="pill ${i.status==="done"?"g2":""}">${i.status==="done"?"تم التسليم":"جديد"}</span><button class="btn d sm" data-a="deli" data-id="${i.id}">حذف البيع</button></div>`).join("")}
+<div class="row"><b>الإجمالي ${fm(+o.total)} (شحن ${fm(+o.shipping)})</b><button class="btn sm" data-a="ok" data-id="${o.id}">تم التسليم ✔</button><button class="btn d sm" data-a="delo" data-id="${o.id}">حذف الطلب</button></div></div>`}).join("")||'<div class="card mu">مفيش طلبات لسه</div>'}
+$("orders").onclick=async ev=>{
+  const b=ev.target.closest("[data-a]");if(!b)return;const id=+b.dataset.id,a=b.dataset.a;let r;
+  if(a==="ok"){r=await sb.from("shop_order_items").update({status:"done"}).eq("order_id",id);if(!r.error)r=await sb.from("shop_orders").update({status:"done"}).eq("id",id)}
+  else if(a==="deli"){if(!confirm("حذف البيع ده من السجل؟"))return;r=await sb.from("shop_order_items").delete().eq("id",id)}
+  else if(a==="delo"){if(!confirm("حذف الطلب كله؟"))return;r=await sb.from("shop_orders").delete().eq("id",id)}
+  r&&r.error?msg(r.error.message):load()};
 init();
-</script>
-</body></html>
+</script></body></html>

@@ -1,4 +1,4 @@
-const CACHE = "yala-eg-v3";
+const CACHE = "yala-eg-v4";
 const SHELL = ["./", "index.html", "logo.png", "icon-192.png", "icon-512.png", "manifest.json", "products.js"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -21,4 +21,7 @@ self.addEventListener("fetch", e => {
 self.addEventListener("notificationclick", e => {
   e.notification.close();
   e.waitUntil(self.clients.matchAll({type:"window"}).then(cs => cs.length ? cs[0].focus() : self.clients.openWindow("./")));
+});
+self.addEventListener("periodicsync", e => {
+  if (e.tag === "yala-remind") e.waitUntil(self.registration.showNotification("🛍️ وحشتنا في yala-eg", { body: "في عروض ومنتجات جديدة، تعالى شوفها", icon: "icon-192.png", dir: "rtl", lang: "ar" }));
 });

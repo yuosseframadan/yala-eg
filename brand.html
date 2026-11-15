@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>لوحة البائع | yala-eg</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="panel.css">
+</head>
+<body><div class="w">
+<h1>لوحة البائع · <b>yala-eg</b></h1><div id="m"></div>
+<div class="card" id="login" hidden>
+  <h3>تسجيل دخول البائع</h3>
+  <label>البريد الإلكتروني أو رقم الهاتف</label><input id="em" autocomplete="username" dir="ltr">
+  <label>كلمة المرور</label><input id="pw" type="password" autocomplete="current-password" dir="ltr">
+  <button class="btn" id="go">دخول</button><div class="err" id="le"></div>
+</div>
+<div id="panel" hidden>
+  <div class="top card"><span><b id="bn"></b> <span class="mu" id="who"></span></span><button class="btn s sm" id="out">تسجيل خروج</button></div>
+  <div class="stats" id="st"></div>
+  <div class="card"><h3 id="ft">إضافة منتج</h3><div id="pfw"></div></div>
+  <div class="card"><div class="row"><input id="q" placeholder="🔍 بحث في منتجاتي" style="flex:1"><span class="mu"><b id="cnt">0</b> منتج</span></div>
+    <div class="tw"><table><thead><tr><th></th><th>المنتج</th><th>السعر</th><th>الكمية</th><th></th></tr></thead><tbody id="tb"></tbody></table></div></div>
+  <div class="card tw"><h3>مبيعاتي</h3><table><thead><tr><th>التاريخ</th><th>المنتج</th><th>الكمية</th><th>الإجمالي</th><th>الحالة</th></tr></thead><tbody id="sl"></tbody></table></div>
+</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="products.js"></script>
+<script>
+const $=id=>document.getElementById(id),sb=window.sb,E=esc,fm=n=>Math.round(n*100)/100;
+let M=null,PR=[],OI=[],PAY=[],editId=null,mt;
+function msg(t){const m=$("m");m.textContent=t;clearTimeout(mt);mt=setTimeout(()=>m.textContent="",4500)}
+function show(l){$("login").hidden=l;$("panel").hidden=!l}
+async function init(){
+  if(!sb){show(false);$("le").textContent="تعذر تحميل مكتبة Supabase (النت؟). حدّث الصفحة.";return}
+  const{data}=await sb.auth.getSession();
+  if(data.session)enter(data.session.user);else show(false)}
+async function enter(u){
+  const{data}=await sb.from("merchants").select("*").eq("user_id",u.id).maybeSingle();
+  if(!data){await sb.auth.signOut();show(false);$("le").textContent="الحساب ده مش حساب بائع";return}
+  M=data;show(true);$("bn").textContent=M.name;$("who").textContent=u.email;
+  $("pfw").innerHTML=PF.html(false);PF.bind();$("pf").onsubmit=saveP;$("p_cl").onclick=resetP;load()}
+$("go").onclick=async()=>{
+  $("le").textContent="";if(!sb)return $("le").textContent="Supabase مش متصل";
+  let id=$("em").value.trim();if(!id||!$("pw").value)return $("le").textContent="اكتب البريد/الهاتف والباسورد";
+  if(!id.includes("@")){const r=await sb.rpc("login_email",{p:id});if(r.error||!r.data)return $("le").textContent="رقم الهاتف ده مش مسجل";id=r.data}
+  const{data,error}=await sb.auth.signInWithPassword({email:id,password:$("pw").value});
+  if(error)return $("le").textContent="بيانات الدخول غلط";
+  $("pw").value="";enter(data.user)};
+$("out").onclick=async()=>{await sb.auth.signOut();location.reload()};
+
+async function load(){
+  const r=await Promise.all([sb.from("products").select("*").eq("merchant_id",M.id).order("id",{ascending:false}),
+    sb.from("shop_order_items").select("*").eq("merchant_id",M.id).order("id",{ascending:false}),sb.from("shop_payments").select("*").eq("merchant_id",M.id)]);
+  const bad=r.find(x=>x.error);if(bad)msg("خطأ: "+bad.error.message);
+  [PR,OI,PAY]=r.map(x=>x.data||[]);
+  const p=PLANS[M.plan]||PLANS.commission,end=M.plan_end?new Date(M.plan_end):null,days=end?Math.ceil((end-Date.now())/864e5):null;
+  const done=OI,sales=done.reduce((a,i)=>a+i.price*i.qty,0),due=sales*p.rate,paid=PAY.reduce((a,x)=>a+ +x.amount,0);
+  const left=p.max===Infinity?"∞":Math.max(0,p.max-PR.length);
+  $("st").innerHTML=`<div><b>${p.n}</b>باقتك${!M.is_active?" (موقوفة)":""}</div><div><b>${end?end.toLocaleDateString("ar-EG"):"—"}</b>تنتهي ${days==null?"":days<0?"(منتهية!)":"بعد "+days+" يوم"}</div><div><b>${PR.length} / ${p.max===Infinity?"∞":p.max}</b>منتجاتك (المتبقي ${left})</div><div><b>${fm(sales)}</b>إجمالي مبيعاتك</div><div><b>${p.rate*100}%</b>عمولة الموقع</div><div><b>${fm(due)}</b>عمولة للموقع</div><div><b>${fm(paid)}</b>اللي سدّدته</div><div><b>${fm(due-paid)}</b>المتبقي عليك</div>`;
+  renderP();
+  $("sl").innerHTML=OI.map(i=>`<tr><td>${new Date(i.created_at).toLocaleDateString("ar-EG")}</td><td>${i.is_digital?"📥 ":""}${E(i.name)}</td><td>${i.qty}</td><td>${fm(i.price*i.qty)}</td><td><span class="pill ${i.status==="done"?"g2":""}">${i.status==="done"?"تم التسليم":"جديد"}</span></td></tr>`).join("")||'<tr><td colspan="5" class="mu">مفيش مبيعات لسه</td></tr>'}
+const nz=s=>String(s||"").toLowerCase().replace(/[\u064B-\u065F\u0640]/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه");
+function renderP(){const ts=nz($("q").value).split(/\s+/).filter(Boolean),r=PR.filter(p=>{const h=nz([p.name,p.cat,p.price].join(" "));return ts.every(t=>h.includes(t))});
+  $("cnt").textContent=r.length;$("tb").innerHTML=PF.rows(r,false)||'<tr><td colspan="5" class="mu">مفيش منتجات</td></tr>'}
+$("q").oninput=renderP;
+$("tb").onclick=PF.onTable(sb,()=>PR,load,async r=>{
+  editId=r.id;$("ft").textContent="تعديل: "+r.name;let u="";
+  if(r.is_digital){const d=await sb.from("digital_links").select("url").eq("product_id",r.id).maybeSingle();u=d.data?d.data.url:""}
+  PF.fill(r,u);scrollTo(0,0)},msg);
+function resetP(){editId=null;$("pf").reset();$("p_stock").value=1;$("p_prev").hidden=true;$("p_digw").hidden=true;$("ft").textContent="إضافة منتج"}
+async function saveP(ev){
+  ev.preventDefault();const x=PF.read(false);if(x.err)return msg(x.err);
+  if(!editId){
+    if(!M.is_active)return msg("حسابك موقوف، كلّم الإدارة");
+    if(M.plan_end&&new Date(M.plan_end)<Date.now())return msg("باقتك منتهية، جدّد اشتراكك");
+    const p=PLANS[M.plan]||PLANS.commission;if(PR.length>=p.max)return msg("وصلت للحد الأقصى لمنتجات باقتك ("+p.max+"). رقّي الباقة لإضافة المزيد")}
+  x.row.merchant_id=M.id;
+  const s=await PF.save(sb,editId,x.row,x.durl);if(s.err)return msg(s.err);
+  msg("اتحفظ ✔");resetP();load()}
+init();
+</script></body></html>
