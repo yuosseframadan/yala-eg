@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#0b0b0b"><title>تطبيق الطيار | yala-eg</title>
+<link rel="manifest" href="manifest-rider.json"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="panel.css">
+</head>
+<body><div class="w">
+<h1>🛵 تطبيق الطيار · <b>yala-eg</b></h1><div id="m"></div>
+<div class="card" id="login" hidden>
+  <h3>تسجيل دخول الطيار</h3>
+  <label>رقم الهاتف أو البريد الإلكتروني</label><input id="em" autocomplete="username" dir="ltr">
+  <label>كلمة المرور</label><input id="pw" type="password" autocomplete="current-password" dir="ltr">
+  <button class="btn" id="go">دخول</button><div class="err" id="le"></div>
+</div>
+<div id="panel" hidden>
+  <div class="top card"><span><b id="rn"></b> <span class="mu" id="rt"></span></span><span><button class="btn s sm" id="rf5">🔄 تحديث</button> <button class="btn s sm" id="out">خروج</button></span></div>
+  <div class="stats" id="sm"></div>
+  <div id="mine"></div><div id="av"></div><div id="tk"></div><div id="dn"></div>
+</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="products.js"></script>
+<script>
+const $=id=>document.getElementById(id),sb=window.sb,E=esc;
+let R=null,OS=[],mt,known=null,tick,SUM=null;
+function msg(t){const m=$("m");m.textContent=t;clearTimeout(mt);mt=setTimeout(()=>m.textContent="",4500)}
+function show(l){$("login").hidden=l;$("panel").hidden=!l}
+try{$("em").value=localStorage.getItem("rider_id")||""}catch(x){}
+async function init(){
+  if(!sb){show(false);$("le").textContent="تعذر تحميل مكتبة Supabase (النت؟). حدّث الصفحة.";return}
+  const{data}=await sb.auth.getSession();
+  if(data.session)enter(data.session.user);else show(false)}
+async function enter(u){
+  const{data}=await sb.from("riders").select("*").eq("user_id",u.id).maybeSingle();
+  if(!data){await sb.auth.signOut();show(false);$("le").textContent="الحساب ده مش حساب طيار";return}
+  if(!data.is_active){await sb.auth.signOut();show(false);$("le").textContent="حسابك موقوف، كلّم الإدارة";return}
+  R=data;show(true);$("rn").textContent=R.name;$("rt").textContent=R.merchant_id?"(طيار محل)":"(طيار عام)";
+  if("Notification" in window&&Notification.permission==="default")Notification.requestPermission();
+  const sn=snap.get("rider");if(sn&&sn.id===R.id){OS=sn.OS||[];SUM=sn.SUM;render()}
+  load();document.addEventListener("visibilitychange",()=>{if(!document.hidden)load()});$("rf5").onclick=()=>{load();msg("جاري التحديث…")};tick=setInterval(timers,1000)}
+$("go").onclick=async()=>{
+  $("le").textContent="";if(!sb)return $("le").textContent="Supabase مش متصل";
+  let id=$("em").value.trim();if(!id||!$("pw").value)return $("le").textContent="اكتب الهاتف/البريد والباسورد";
+  try{localStorage.setItem("rider_id",id)}catch(x){}
+  if(!id.includes("@")){const r=await sb.rpc("login_email",{p:id});if(r.error||!r.data)return $("le").textContent="رقم الهاتف ده مش مسجل";id=r.data}
+  const{data,error}=await sb.auth.signInWithPassword({email:id,password:$("pw").value});
+  if(error)return $("le").textContent="بيانات الدخول غلط";
+  $("pw").value="";enter(data.user)};
+$("out").onclick=async()=>{await sb.auth.signOut();location.reload()};
+
+const tm=t=>t?new Date(t).toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"}):"—";
+const mins=(a,b)=>a&&b?Math.max(0,Math.round((new Date(b)-new Date(a))/6e4))+" دقيقة":"—";
+async function load(){
+  const[a,b]=await Promise.all([sb.rpc("rider_orders"),sb.rpc("rider_summary")]);
+  if(a.error)return msg(a.error.message);
+  OS=a.data||[];SUM=b.data||null;snap.set("rider",{id:R.id,OS,SUM});
+  const ids=OS.filter(o=>o.status==="open").map(o=>o.id);
+  if(known&&ids.some(i=>!known.includes(i))){msg("🔔 أوردر جديد متاح للتوصيل");if("Notification" in window&&Notification.permission==="granted")new Notification("🛵 أوردر جديد متاح",{body:"في أوردر مؤكد مستني طيار"})}
+  known=ids;render()}
+// المحلات: اسم كل محل + عنوانه + المنتجات والكمية والسعر
+function shops(o){
+  const g={};o.items.forEach(i=>{const k=i.shop||"yala-eg";(g[k]=g[k]||{addr:i.shop_address,phone:i.shop_phone,it:[]}).it.push(i)});
+  return Object.entries(g).map(([n,x])=>`<div class="irow"><b>🏪 ${E(n)}</b>${x.addr?` <span class="mu">📍 ${E(x.addr)}</span>`:""}${x.phone?` <a class="btn s sm" href="tel:${E(x.phone)}">📞</a>`:""}${x.it.map(i=>`<div>• ${E(i.name)} × ${i.qty} <span class="mu">(${fm(i.price*i.qty)} ج.م)</span></div>`).join("")}</div>`).join("")}
+function card(o,busy){
+  const sub=fm(+o.total-+o.shipping);let act="";
+  if(o.status==="open")act=busy?'<span class="mu">سلّم أوردرك الحالي الأول</span>':`<button class="btn" data-s="accept" data-id="${o.id}">🛵 أخذ الأوردر</button>`;
+  else if(o.status==="accepted")act=`<button class="btn" data-s="pick" data-id="${o.id}">📦 تم استلام الأوردر</button>`;
+  else if(o.status==="picked")act=`<button class="btn" data-s="deliver" data-id="${o.id}">✅ تسليم الأوردر</button>`;
+  const live=o.status==="accepted"||o.status==="picked"?`<div class="big">⏱ <span data-t="${o.accepted_at}">—</span> من وقت أخذ الأوردر</div>`:"";
+  const cust=o.status==="picked"||o.status==="delivered"?`<div class="irow" style="background:#101010;border-radius:10px;padding:8px"><b>👤 ${E(o.name)}</b> <a class="btn s sm" href="tel:${E(o.phone)}">📞 ${E(o.phone)}</a> <a class="btn s sm" target="_blank" rel="noopener" href="https://wa.me/${waNum(o.phone)}">واتساب</a><div>📍 ${E(o.address||"—")}</div>${o.note?`<div class="mu">ملاحظة: ${E(o.note)}</div>`:""}</div>`:(o.status==="accepted"?'<div class="mu">بيانات العميل بتظهر بعد ما تضغط "تم استلام الأوردر"</div>':"");
+  const rep=o.status==="delivered"?`<div class="tl">أخذت: ${tm(o.accepted_at)} · استلمت: ${tm(o.picked_at)} · سلّمت: ${tm(o.delivered_at)}<br>أخذ←استلام: ${mins(o.accepted_at,o.picked_at)} · استلام←تسليم: ${mins(o.picked_at,o.delivered_at)} · الإجمالي: ${mins(o.accepted_at,o.delivered_at)}</div>`:"";
+  return`<div class="ord"><div class="row"><b>أوردر #${o.id}</b><span class="pill">${o.status==="open"?"متاح":o.status==="accepted"?"أخدته":o.status==="picked"?"معاك":"تم"}</span></div>
+${shops(o)}<div class="row"><span>🛒 سعر الأوردر: <b>${sub} ج.م</b></span><span>🚚 التوصيل: <b>${fm(+o.shipping)} ج.م</b></span><span>💵 المطلوب تحصيله: <b>${fm(+o.total)} ج.م</b></span></div>${cust}${live}${rep}<div class="row" style="margin-top:6px">${act}</div></div>`}
+function render(){
+  const mi=OS.filter(o=>o.mine&&(o.status==="accepted"||o.status==="picked")),busy=mi.length>0;
+  const av=OS.filter(o=>!o.mine&&o.status==="open"),tk=OS.filter(o=>!o.mine&&(o.status==="accepted"||o.status==="picked")),dn=OS.filter(o=>o.mine&&o.status==="delivered");
+  if(SUM)$("sm").innerHTML=`<div><b>${SUM.count}</b>توصيلات</div><div><b>${fm(+SUM.fees)}</b>إجمالي التوصيل</div><div><b>${fm(+SUM.share)}</b>نسبة المنصة (${RIDER_RATE*100}%)</div><div><b>${fm(+SUM.net)}</b>صافيك (${100-RIDER_RATE*100}%)</div><div><b>${fm(+SUM.paid)}</b>سدّدت</div><div><b>${fm(+SUM.left)}</b>المتبقي عليك</div><div><b>${SUM.rating?SUM.rating+" ⭐":"—"}</b>تقييمك ${SUM.reviews?"("+SUM.reviews+")":""}</div>`;
+  $("mine").innerHTML=mi.length?`<div class="card" style="border-color:var(--o)"><h3>🚚 أوردرك الحالي</h3>${mi.map(o=>card(o,true)).join("")}</div>`:"";
+  $("av").innerHTML=`<div class="card"><h3>📋 أوردرات مؤكدة متاحة (${av.length})</h3>${busy?'<div class="mu" style="margin-bottom:6px">⚠️ مينفعش تاخد أوردر جديد قبل ما تسلّم اللي معاك.</div>':""}${av.map(o=>card(o,busy)).join("")||'<div class="mu">مفيش أوردرات مؤكدة دلوقتي</div>'}</div>`;
+  $("tk").innerHTML=tk.length?`<div class="card"><h3>🔒 أوردرات اتاخدت</h3>${tk.map(o=>`<div class="irow">أوردر #${o.id} — <span class="pill z">تم أخذه</span></div>`).join("")}</div>`:"";
+  $("dn").innerHTML=`<div class="card"><h3>✔ تم تسليمها (${dn.length})</h3>${dn.map(o=>card(o,busy)).join("")||'<div class="mu">مفيش</div>'}</div>`;timers()}
+function timers(){document.querySelectorAll("[data-t]").forEach(x=>{const t=x.dataset.t;if(!t||t==="null")return;const s=Math.max(0,(Date.now()-new Date(t))/1e3|0);x.textContent=String(s/3600|0).padStart(2,"0")+":"+String(s%3600/60|0).padStart(2,"0")+":"+String(s%60).padStart(2,"0")})}
+document.addEventListener("click",async ev=>{
+  const b=ev.target.closest("[data-s]");if(!b)return;b.disabled=true;
+  const{data,error}=await sb.rpc("rider_step",{p_id:+b.dataset.id,p_step:b.dataset.s});
+  if(error)msg(error.message);else if(!data)msg(b.dataset.s==="accept"?"عذراً، سبقك طيار آخر وأخذ هذا الأوردر":"حالة الأوردر اتغيرت (يمكن اتلغى). حدّث الصفحة");
+  load()});
+init();
+</script>
+<script src="install.js"></script>
+</body></html>

@@ -4,6 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><title>لوحة التحكم | yala-eg</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest-admin.json"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="theme-color" content="#0b0b0b">
 <link rel="stylesheet" href="panel.css">
 </head>
 <body><div class="w">
@@ -15,8 +16,9 @@
   <button class="btn" id="go">دخول</button><div class="err" id="le"></div>
 </div>
 <div id="panel" hidden>
-  <div class="top card"><span class="mu" id="who"></span><button class="btn s sm" id="out">تسجيل خروج</button></div>
-  <div class="tabs" id="tabs"><button data-t="products" class="on">المنتجات</button><button data-t="sellers">البائعين</button><button data-t="acc">الحسابات والأرباح</button><button data-t="orders">الطلبات</button></div>
+  <div class="top card"><span class="mu" id="who"></span><span><button class="btn s sm" id="rf5">🔄 تحديث</button> <button class="btn s sm" id="out">تسجيل خروج</button></span></div>
+  <div id="pend"></div>
+  <div class="tabs" id="tabs"><button data-t="products" class="on">المنتجات</button><button data-t="sellers">البائعين</button><button data-t="acc">الحسابات والأرباح</button><button data-t="orders">الطلبات والتوصيل</button><button data-t="riders">الطيارين</button><button data-t="rep">التقرير الشهري</button><button data-t="set">البث والإعدادات</button></div>
 
   <div id="products" class="pane">
     <div class="card"><h3 id="ft">إضافة منتج</h3><div id="pfw"></div></div>
@@ -31,6 +33,7 @@
         <div><label>اسم صاحب المحل</label><input id="s_owner"></div>
         <div><label>البريد الإلكتروني *</label><input id="s_email" type="email" required dir="ltr"></div>
         <div><label>رقم الهاتف (واتساب) *</label><input id="s_phone" type="tel" required dir="ltr" placeholder="01xxxxxxxxx"></div>
+        <div><label>عنوان المحل (بيظهر للطيار)</label><input id="s_addr"></div>
         <div><label>كلمة المرور * (6 حروف+)</label><input id="s_pw" required minlength="6" dir="ltr"></div>
         <div><label>رابط اللوجو</label><input id="s_logo" dir="ltr"></div>
         <div><label>الباقة *</label><select id="s_plan"></select></div>
@@ -39,15 +42,40 @@
     <div class="card tw"><table><thead><tr><th>البائع</th><th>تواصل</th><th>الباقة</th><th>تنتهي</th><th>المنتجات</th><th>الحالة</th><th></th></tr></thead><tbody id="stb"></tbody></table></div>
   </div>
 
+  <div id="riders" class="pane" hidden>
+    <div class="card"><h3>إضافة طيار</h3><form id="rf"><div class="g">
+      <div><label>الاسم الثلاثي *</label><input id="r_name" required></div>
+      <div><label>رقم الهاتف *</label><input id="r_phone" type="tel" required dir="ltr"></div>
+      <div><label>البريد الإلكتروني *</label><input id="r_email" type="email" required dir="ltr"></div>
+      <div><label>كلمة المرور * (6 حروف+)</label><input id="r_pw" required minlength="6" dir="ltr"></div>
+      <div><label>النوع</label><select id="r_mid"></select></div></div><button class="btn">إضافة الطيار</button></form></div>
+    <div class="card tw"><table><thead><tr><th>الطيار</th><th>تواصل</th><th>النوع</th><th>التقييم</th><th>الحالة</th><th></th></tr></thead><tbody id="rtb"></tbody></table></div>
+  </div>
+  <div id="set" class="pane" hidden>
+    <div class="card"><h3>🏷️ الهوية والنصوص</h3>
+      <label>رقم خدمة العملاء (واتساب واتصال)</label><input id="sp_ph" dir="ltr" placeholder="01xxxxxxxxx">
+      <label>رابط اللوجو (من أي موقع أو ImageKit، وفاضي = اللوجو الافتراضي)</label><input id="lg_url" dir="ltr"><img id="lg_prev" class="prev" alt="" hidden>
+      <label>الجملة تحت اللوجو في الصفحة الرئيسية</label><input id="hr_tx"><button class="btn" id="id_sv">حفظ</button></div>
+    <div class="card"><h3>🎉 البانر العلوي</h3><label class="ck"><input type="checkbox" id="bn_on"> إظهار البانر</label><label>النص</label><input id="bn_tx"><button class="btn" id="bn_sv">حفظ</button></div>
+    <div class="card"><h3>📍 الشريط السفلي (الفوتر)</h3><label class="ck"><input type="checkbox" id="ft_on"> إظهار الشريط</label><label>النص</label><input id="ft_tx"><button class="btn" id="ft_sv">حفظ</button></div>
+    <div class="card"><h3>📣 بث إشعار للزوار</h3><div class="mu">الأجهزة المشتركة في الإشعار الفوري: <b id="bc_n">0</b> · كل زائر بيفتح الموقع هيشوف الإشعار كمان جوه الموقع.</div>
+      <label>العنوان *</label><input id="bc_t" placeholder="🔥 عرض جديد!"><label>الرسالة</label><textarea id="bc_b" rows="2"></textarea><label>رابط عند الضغط (اختياري)</label><input id="bc_u" dir="ltr" placeholder="#/p/3 أو #/"><button class="btn" id="bc_go">إرسال الآن</button><div class="err" id="bc_r"></div>
+      <h3 style="margin-top:12px">آخر الإشعارات</h3><div id="bc_h"></div></div>
+  </div>
+  <div id="rep" class="pane" hidden>
+    <div class="card"><h3>📄 الفاتورة والتقرير الشهري الشامل</h3><div class="row"><span id="rpsel"></span><button class="btn" id="rp_go">عرض</button><button class="btn s" id="rp_pr">🖨 طباعة / حفظ PDF</button></div></div>
+    <div class="card" id="rpout"></div>
+  </div>
   <div id="acc" class="pane" hidden></div>
   <div id="orders" class="pane" hidden></div>
 </div></div>
 
+<div id="printArea"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <script src="products.js"></script>
 <script>
 const $=id=>document.getElementById(id),sb=window.sb,E=esc,fm=n=>Math.round(n*100)/100;
-let MS=[],PR=[],OI=[],OR=[],PAY=[],editId=null,mt;
+let MS=[],PR=[],OI=[],OR=[],PAY=[],RD=[],ST={},BC=[],PS=0,RPAY=[],RRV=[],editId=null,mt,lastPend=-1;
 function msg(t){const m=$("m");m.textContent=t;clearTimeout(mt);mt=setTimeout(()=>m.textContent="",4500)}
 function show(l){$("login").hidden=l;$("panel").hidden=!l}
 async function init(){
@@ -56,7 +84,7 @@ async function init(){
   if(data.session)enter(data.session.user);else show(false)}
 function enter(u){
   if(u.id!==ADMIN_UID){sb.auth.signOut();show(false);$("le").textContent="الحساب ده مش حساب المشرف";return}
-  $("who").textContent="داخل كـ "+u.email;show(true);boot()}
+  $("who").textContent="داخل كـ "+u.email;show(true);boot();document.addEventListener("visibilitychange",()=>{if(!document.hidden)poll()});$("rf5").onclick=()=>{load();msg("جاري التحديث…")};if("Notification" in window&&Notification.permission==="default")Notification.requestPermission()}
 $("go").onclick=async()=>{
   $("le").textContent="";if(!sb)return $("le").textContent="Supabase مش متصل";
   const{data,error}=await sb.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});
@@ -70,13 +98,17 @@ function boot(){
   $("pfw").innerHTML=PF.html(true);PF.bind();
   $("s_plan").innerHTML=Object.entries(PLANS).map(([k,p])=>`<option value="${k}">${p.n} — ${p.max===Infinity?"∞":p.max} منتج، ${p.fee} ج/شهر${p.rate?"، عمولة "+p.rate*100+"%":""}</option>`).join("");
   $("s_end").value=new Date(Date.now()+30*864e5).toISOString().slice(0,10);
-  $("pf").onsubmit=saveP;$("p_cl").onclick=resetP;load()}
+  $("pf").onsubmit=saveP;$("p_cl").onclick=resetP;$("rpsel").innerHTML=monthSel();$("rp_go").onclick=renderRep;$("rp_pr").onclick=()=>printHtml(buildRep());
+  const sn=snap.get("admin");if(sn){({MS,PR,OI,OR,PAY,RD,ST,BC,PS,RPAY,RRV}=sn);PF.merchantsSel(MS);renderP();renderS();renderA();renderO();renderPend();renderR();renderSet();renderRep()}
+  load()}
 async function load(){
   const r=await Promise.all([sb.from("merchants").select("*").order("id"),sb.from("products").select("*").order("id",{ascending:false}),
-    sb.from("shop_order_items").select("*"),sb.from("shop_orders").select("*").order("id",{ascending:false}).limit(80),sb.from("shop_payments").select("*")]);
+    fetchAll(()=>sb.from("shop_order_items").select("*").order("id",{ascending:false})),fetchAll(()=>sb.from("shop_orders").select("*").order("id",{ascending:false})),sb.from("shop_payments").select("*"),
+    sb.from("riders").select("*").order("id"),sb.from("settings").select("*"),sb.from("broadcasts").select("*").order("id",{ascending:false}).limit(10),
+    sb.from("push_subs").select("id",{count:"exact",head:true}),sb.from("rider_payments").select("*"),sb.from("rider_reviews").select("*")]);
   const bad=r.find(x=>x.error);if(bad)msg("خطأ تحميل: "+bad.error.message+" (شغّل supabase-schema.sql؟)");
-  [MS,PR,OI,OR,PAY]=r.map(x=>x.data||[]);
-  PF.merchantsSel(MS);renderP();renderS();renderA();renderO()}
+  [MS,PR,OI,OR,PAY,RD]=r.slice(0,6).map(x=>x.data||[]);ST={};(r[6].data||[]).forEach(x=>ST[x.key]=x.value);BC=r[7].data||[];PS=r[8].count||0;RPAY=r[9].data||[];RRV=r[10].data||[];snap.set("admin",{MS,PR,OI,OR,PAY,RD,ST,BC,PS,RPAY,RRV});
+  PF.merchantsSel(MS);renderP();renderS();renderA();renderO();renderPend();renderR();renderSet();renderRep()}
 
 /* ===== المنتجات ===== */
 const nz=s=>String(s||"").toLowerCase().replace(/[\u064B-\u065F\u0640]/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه");
@@ -85,26 +117,23 @@ function renderP(){
   const r=PR.filter(p=>{const h=nz([p.name,p.merchant_name,p.cat,p.price].join(" "));return ts.every(t=>h.includes(t))});
   $("cnt").textContent=r.length;$("tb").innerHTML=PF.rows(r,true)||'<tr><td colspan="6" class="mu">مفيش منتجات</td></tr>'}
 $("q").oninput=renderP;
-$("tb").onclick=PF.onTable(sb,()=>PR,load,async r=>{
-  editId=r.id;$("ft").textContent="تعديل: "+r.name;let u="";
-  if(r.is_digital){const d=await sb.from("digital_links").select("url").eq("product_id",r.id).maybeSingle();u=d.data?d.data.url:""}
-  PF.fill(r,u);scrollTo(0,0)},msg);
-function resetP(){editId=null;$("pf").reset();$("p_stock").value=1;$("p_prev").hidden=true;$("p_digw").hidden=true;$("ft").textContent="إضافة منتج"}
+$("tb").onclick=PF.onTable(sb,()=>PR,load,r=>{editId=r.id;$("ft").textContent="تعديل: "+r.name;PF.fill(r);scrollTo(0,0)},msg);
+function resetP(){editId=null;$("pf").reset();$("p_stock").value=1;$("p_prev").hidden=true;$("ft").textContent="إضافة منتج"}
 async function saveP(ev){
   ev.preventDefault();const x=PF.read(true);if(x.err)return msg(x.err);
   const s=await PF.save(sb,editId,x.row,x.durl);if(s.err)return msg(s.err);
   msg("اتحفظ ✔");resetP();load()}
 
 /* ===== البائعين ===== */
-const cnt=m=>PR.filter(p=>p.merchant_id===m.id).length,lim=m=>PLANS[m.plan]?PLANS[m.plan].max:15;
+const cnt=m=>PR.filter(p=>p.merchant_id===m.id).length,lim=m=>PLANS[m.plan]?PLANS[m.plan].max:25;
 function renderS(){
   $("stb").innerHTML=MS.map(m=>{
     const end=m.plan_end?new Date(m.plan_end):null,days=end?Math.ceil((end-Date.now())/864e5):null;
     const ec=days==null?"":days<0?"bad":days<=7?"z":"g2";
     return`<tr><td>${m.logo_url?`<img class="th" src="${E(imgSrc(m.logo_url))}" onerror="this.style.visibility='hidden'" alt=""> `:""}<b>${E(m.name)}</b><small class="mu">${E(m.owner_name||"")}</small></td>
-<td dir="ltr">${E(m.phone||"")}<small class="mu">${E(m.email||"")}</small></td>
+<td dir="ltr">${E(m.phone||"")}<small class="mu">${E(m.email||"")}</small><small class="mu" dir="rtl">${E(m.address||"")}</small></td>
 <td><select data-a="plan" data-id="${m.id}">${Object.entries(PLANS).map(([k,p])=>`<option value="${k}"${m.plan===k?" selected":""}>${p.n}</option>`).join("")}</select></td>
-<td>${end?`<span class="pill ${ec}">${end.toLocaleDateString("ar-EG")} ${days<0?"(منتهية)":"("+days+" يوم)"}</span>`:"—"}</td>
+<td>${end?`<span class="pill ${ec}">${end.toLocaleDateString("ar-EG")} ${days<0?(days>=-3?"(منتهية، سماح "+(3+days)+" يوم)":"(منتهية، منتجاته مخفية)"):"("+days+" يوم)"}</span>`:"—"}</td>
 <td>${cnt(m)} / ${lim(m)===Infinity?"∞":lim(m)}</td>
 <td><span class="pill ${m.is_active?"g2":"z"}">${m.is_active?"شغال":"موقوف"}</span></td>
 <td class="act"><button class="btn s sm" data-a="renew" data-id="${m.id}">تجديد 30 يوم</button><button class="btn s sm" data-a="tog" data-id="${m.id}">${m.is_active?"إيقاف مؤقت":"تفعيل"}</button><button class="btn d sm" data-a="delm" data-id="${m.id}">حذف</button></td></tr>`}).join("")||'<tr><td colspan="7" class="mu">مفيش بائعين</td></tr>'}
@@ -122,38 +151,140 @@ $("sf").onsubmit=async ev=>{
   const{data,error}=await tmp.auth.signUp({email,password:v("s_pw")});
   if(error)return msg("فشل إنشاء الحساب: "+error.message+" — فعّل Allow new users to sign up وقفل Confirm email من إعدادات Auth");
   if(!data.user||(data.user.identities&&!data.user.identities.length))return msg("الإيميل ده مستخدم قبل كده");
-  const{error:e2}=await sb.from("merchants").insert({user_id:data.user.id,name:v("s_brand"),owner_name:v("s_owner")||null,logo_url:v("s_logo")||null,email,phone:v("s_phone"),plan:$("s_plan").value,plan_end:v("s_end")?new Date(v("s_end")+"T23:59:59").toISOString():null});
+  const{error:e2}=await sb.from("merchants").insert({user_id:data.user.id,name:v("s_brand"),owner_name:v("s_owner")||null,logo_url:v("s_logo")||null,email,phone:v("s_phone"),address:v("s_addr")||null,plan:$("s_plan").value,plan_end:v("s_end")?new Date(v("s_end")+"T23:59:59").toISOString():null});
   if(e2)return msg(e2.message);msg("اتضاف البائع ✔ (ابعتله الإيميل والباسورد ورابط brand.html)");$("sf").reset();$("s_end").value=new Date(Date.now()+30*864e5).toISOString().slice(0,10);load()};
 
-/* ===== الحسابات والأرباح ===== */
+/* ===== الحسابات والأرباح (البيع بيتحسب لما الطيار يسلّم، ومفيش حساب على الملغي) ===== */
+const rr=r=>{const a=RRV.filter(x=>x.rider_id===r.id);return a.length?fm(a.reduce((q,x)=>q+x.stars,0)/a.length)+" ⭐ ("+a.length+")":"—"};
+const mname=id=>id?(MS.find(m=>m.id===id)||{name:"(محذوف)"}).name:"yala-eg";
+const itOf=o=>OI.filter(i=>i.order_id===o.id);
+const isReady=o=>{const it=itOf(o);return o.status!=="cancelled"&&!o.cancel_req&&it.length>0&&it.every(i=>i.ready&&i.req_qty==null)};
+const sumBy=a=>{const m={};a.forEach(i=>{const k=i.merchant_id||0;m[k]=(m[k]||0)+i.price*i.qty});return m};
+const foldR=a=>{const m={};a.forEach(o=>{const x=m[o.rider_id]=m[o.rider_id]||{n:0,f:0};x.n++;x.f+=+o.shipping});return m};
 function renderA(){
-  const done=OI,S={};done.forEach(i=>{const k=i.merchant_id||0;S[k]=(S[k]||0)+i.price*i.qty});
-  const rate=m=>PLANS[m.plan]?PLANS[m.plan].rate:0,paid=m=>PAY.filter(p=>p.merchant_id===m.id).reduce((a,p)=>a+ +p.amount,0);
-  const tot=Object.values(S).reduce((a,b)=>a+b,0),comm=MS.reduce((a,m)=>a+(S[m.id]||0)*rate(m),0),own=S[0]||0;
-  const subs=MS.filter(m=>m.is_active).reduce((a,m)=>a+(PLANS[m.plan]?PLANS[m.plan].fee:0),0);
-  const units=PR.reduce((a,p)=>a+Math.max(0,p.stock),0);
-  $("acc").innerHTML=`<div class="stats"><div><b>${fm(tot)}</b>إجمالي المبيعات</div><div><b>${fm(own)}</b>مبيعات منتجاتي</div><div><b>${fm(comm)}</b>عمولات من البائعين</div><div><b>${fm(own+comm)}</b>ربحي من المبيعات</div><div><b>${subs}</b>اشتراكات شهرية متوقعة</div><div><b>${PR.length}</b>منتج (${units} قطعة متوفرة)</div><div><b>${OR.filter(o=>o.status==="new").length}</b>طلبات جديدة</div></div>
-<div class="card tw"><h3>حساب البائعين</h3><table><thead><tr><th>البائع</th><th>الباقة</th><th>باع بـ</th><th>نسبتي</th><th>ليا عنده</th><th>سدّد</th><th>المتبقي</th><th></th></tr></thead><tbody>${MS.map(m=>{const s=S[m.id]||0,d=s*rate(m),p=paid(m);
-    return`<tr><td>${E(m.name)}</td><td>${PLANS[m.plan]?PLANS[m.plan].n:m.plan}</td><td>${fm(s)}</td><td>${rate(m)*100}%</td><td>${fm(d)}</td><td>${fm(p)}</td><td><b>${fm(d-p)}</b></td><td><button class="btn s sm" data-a="pay" data-id="${m.id}">سدّد</button></td></tr>`}).join("")||'<tr><td colspan="8" class="mu">مفيش بائعين</td></tr>'}</tbody></table>
-<small class="mu">أي طلب بيتحسب تلقائياً أول ما الزبون يطلب، وإنت بس اللي تقدر تحذفه من تبويب الطلبات. رسوم الاشتراك الشهري بتتجدد من تبويب البائعين.</small></div>`}
+  const per=($("per")||{}).value||"all",R=periodRange(per);
+  const sold=OI.filter(Conf.sold),soldP=sold.filter(i=>inR(i.delivered_at,R)),S=sumBy(sold),SP=sumBy(soldP);
+  const rate=m=>PLANS[m.plan]?PLANS[m.plan].rate:COMMISSION,paid=m=>PAY.filter(p=>p.merchant_id===m.id).reduce((a,p)=>a+ +p.amount,0);
+  const own=SP[0]||0,comm=MS.reduce((a,m)=>a+(SP[m.id]||0)*rate(m),0),totP=Object.values(SP).reduce((a,b)=>a+b,0);
+  const dels=OR.filter(o=>o.rider_status==="delivered"&&o.rider_id&&o.status!=="cancelled"),RF=foldR(dels),RP=foldR(dels.filter(o=>inR(o.delivered_at,R)));
+  const rpaid=r=>RPAY.filter(p=>p.rider_id===r.id).reduce((a,p)=>a+ +p.amount,0),rsh=Object.values(RP).reduce((a,x)=>a+x.f*RIDER_RATE,0);
+  const subs=MS.filter(m=>m.is_active).reduce((a,m)=>a+(PLANS[m.plan]?PLANS[m.plan].fee:0),0),units=PR.reduce((a,p)=>a+Math.max(0,p.stock),0);
+  $("acc").innerHTML=`<div class="card"><label style="margin-inline-end:8px">الفترة:</label><select id="per" style="width:auto;display:inline-block"><option value="all">كل الفترات</option><option value="week">هذا الأسبوع</option><option value="lastweek">الأسبوع الماضي</option><option value="month">هذا الشهر</option></select></div>
+<div class="stats"><div><b>${fm(totP)}</b>مبيعات مسلّمة</div><div><b>${fm(own)}</b>مبيعات منتجاتي</div><div><b>${fm(comm)}</b>نسبتي من البائعين (${COMMISSION*100}%)</div><div><b>${fm(rsh)}</b>نسبتي من التوصيل (${RIDER_RATE*100}%)</div><div><b>${fm(own+comm+rsh)}</b>ربحي في الفترة (من غير الاشتراكات)</div><div><b>${subs}</b>اشتراكات شهرية متوقعة</div><div><b>${PR.length}</b>منتج (${units} قطعة)</div><div><b>${OR.filter(o=>o.status==="new"&&o.rider_status==="open"&&!isReady(o)).length}</b>طلبات قيد التجهيز</div></div>
+<div class="card tw"><h3>حساب البائعين</h3><table><thead><tr><th>البائع</th><th>الباقة</th><th>باع (الفترة)</th><th>نسبتي (الفترة)</th><th>ليا إجمالي</th><th>سدّد</th><th>المتبقي</th><th></th></tr></thead><tbody>${MS.map(m=>{const sp=SP[m.id]||0,d=(S[m.id]||0)*rate(m),p=paid(m);
+    return`<tr><td>${E(m.name)}</td><td>${PLANS[m.plan]?PLANS[m.plan].n:m.plan}</td><td>${fm(sp)}</td><td>${fm(sp*rate(m))}</td><td>${fm(d)}</td><td>${fm(p)}</td><td><b>${fm(d-p)}</b></td><td><button class="btn s sm" data-a="pay" data-id="${m.id}">تسديد</button></td></tr>`}).join("")||'<tr><td colspan="8" class="mu">مفيش بائعين</td></tr>'}</tbody></table>
+<small class="mu">البيع بيتحسب بعد ما الطيار يسلّم، بسعر القطعة وقت الطلب (مبيتأثرش لو البائع غيّر سعر المنتج بعدها). الأوردرات الملغاة مبتتحسبش.</small></div>
+<div class="card tw"><h3>حساب الطيارين (عمولة المنصة ${RIDER_RATE*100}% من كل توصيلة، والطيار ياخد ${100-RIDER_RATE*100}%)</h3><table><thead><tr><th>الطيار</th><th>توصيلات (الفترة)</th><th>إجمالي التوصيل (الفترة)</th><th>نسبتي (الفترة)</th><th>ليا إجمالي</th><th>دفع</th><th>المتبقي</th><th>التقييم</th><th></th></tr></thead><tbody>${RD.map(r=>{const x=RP[r.id]||{n:0,f:0},d=(RF[r.id]||{f:0}).f*RIDER_RATE,p=rpaid(r);
+    return`<tr><td>${E(r.name)}</td><td>${x.n}</td><td>${fm(x.f)}</td><td>${fm(x.f*RIDER_RATE)}</td><td>${fm(d)}</td><td>${fm(p)}</td><td><b>${fm(d-p)}</b></td><td>${rr(r)}</td><td><button class="btn s sm" data-a="rpay" data-id="${r.id}">تسديد</button></td></tr>`}).join("")||'<tr><td colspan="9" class="mu">مفيش طيارين</td></tr>'}</tbody></table></div>`;
+  $("per").value=per;$("per").onchange=renderA}
 $("acc").onclick=async ev=>{
-  const b=ev.target.closest("[data-a=pay]");if(!b)return;const id=+b.dataset.id,m=MS.find(x=>x.id===id);
-  const a=parseFloat(prompt("المبلغ اللي "+m.name+" سدّده (ج.م)"));if(!(a>0))return;
-  const{error}=await sb.from("shop_payments").insert({merchant_id:id,amount:a,note:"سداد"});error?msg(error.message):(msg("اتسجل السداد ✔"),load())};
+  const b=ev.target.closest("[data-a=pay],[data-a=rpay]");if(!b)return;const id=+b.dataset.id,rd=b.dataset.a==="rpay",o=(rd?RD:MS).find(x=>x.id===id);
+  const a=parseFloat(prompt("المبلغ اللي "+o.name+" سدّده (ج.م)"));if(!(a>0))return;
+  const{error}=await sb.from(rd?"rider_payments":"shop_payments").insert(rd?{rider_id:id,amount:a,note:"تسديد"}:{merchant_id:id,amount:a,note:"تسديد"});error?msg(error.message):(msg("اتسجل التسديد ✔"),load())};
 
-/* ===== الطلبات ===== */
+/* ===== التنبيهات المعلّقة + الطلبات والتوصيل ===== */
+const itxt=o=>itOf(o).map(i=>E(i.name)+" × "+i.qty).join("، ");
+function renderPend(){
+  const cx=OR.filter(o=>o.cancel_req&&o.status!=="cancelled"),ch=OI.filter(i=>i.req_qty!=null&&!i.cancelled),
+    nw=OR.filter(o=>o.status==="new"&&o.rider_status==="open"&&!o.cancel_req&&!isReady(o)&&!itOf(o).some(i=>i.req_qty!=null)),n=cx.length+ch.length+nw.length;
+  $("pend").innerHTML=n?`<div class="card" style="border-color:var(--o)"><h3>🔔 تنبيهات الطلبات (${n})</h3>
+${cx.map(o=>`<div class="irow">⚠️ <b>${E(mname((itOf(o)[0]||{}).merchant_id))}</b> طلب إلغاء الأوردر <b>#${o.id}</b> (${itxt(o)}) <button class="btn sm" data-c="rcxl" data-oid="${o.id}" data-v="1">تأكيد الإلغاء</button><button class="btn s sm" data-c="rcxl" data-oid="${o.id}" data-v="0">رفض</button></div>`).join("")}
+${ch.map(i=>`<div class="irow">✏️ تعديل مطلوب في أوردر <b>#${i.order_id}</b>: <b>${E(i.name)}</b> من ${i.qty} إلى ${i.req_qty} (${E(mname(i.merchant_id))}) <button class="btn sm" data-c="rchg" data-id="${i.id}" data-v="1">موافقة</button><button class="btn s sm" data-c="rchg" data-id="${i.id}" data-v="0">رفض</button></div>`).join("")}
+${nw.map(o=>`<div class="irow">🔔 تم طلب <b>${itxt(o)}</b> من <b>${E(mname((itOf(o)[0]||{}).merchant_id))}</b> (أوردر #${o.id}) — هل تم التجهيز؟ <button class="btn sm" data-c="ready" data-oid="${o.id}" data-v="1">جاهز للتسليم ✔</button></div>`).join("")}</div>`:"";
+  if(lastPend>=0&&n>lastPend){const t="🔔 تنبيه جديد في الطلبات";msg(t);if("Notification" in window&&Notification.permission==="granted")new Notification("yala-eg",{body:t})}
+  lastPend=n}
+async function poll(){
+  const r=await Promise.all([fetchAll(()=>sb.from("shop_order_items").select("*").order("id",{ascending:false})),fetchAll(()=>sb.from("shop_orders").select("*").order("id",{ascending:false}))]);
+  if(r[0].error||r[1].error)return;OI=r[0].data;OR=r[1].data;renderPend();renderO();renderA()}
+const tt=t=>t?new Date(t).toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"}):"—";
+const mn2=(a,b)=>a&&b?Math.round((new Date(b)-new Date(a))/6e4)+" د":"—";
 function renderO(){
-  const mn=id=>id?(MS.find(m=>m.id===id)||{name:"(محذوف)"}).name:"yala-eg";
-  $("orders").innerHTML=OR.map(o=>{const it=OI.filter(i=>i.order_id===o.id);
-    return`<div class="ord"><div class="row"><b>#${o.id}</b><span>${E(o.name)}</span><span dir="ltr">${E(o.phone)}</span><span class="pill ${o.status==="done"?"g2":""}">${o.status==="done"?"تم التسليم":"جديد"}</span><span class="mu">${new Date(o.created_at).toLocaleString("ar-EG")}</span></div>
+  $("orders").innerHTML=OR.slice(0,150).map(o=>{
+    const it=itOf(o),rd=RD.find(r=>r.id===o.rider_id),cxd=o.status==="cancelled",dv=o.rider_status==="delivered",open=o.rider_status==="open"&&!cxd,rdy=isReady(o);
+    const stg=cxd?"ملغي ❌":o.cancel_req?"طلب إلغاء من البائع ⚠️":dv?"تم التسليم ✅":o.rider_status==="picked"?"مع الطيار في الطريق 🛵":o.rider_id?"الطيار قبل 📦":rdy?"جاهز للطيارين 📦":"قيد التجهيز ⏳";
+    const ship=open?`<div class="row"><label style="margin:0">🚚 التوصيل (ج.م):</label><input id="sh${o.id}" type="number" min="0" max="500" step="any" value="${+o.shipping}" style="width:90px;margin:0"><button class="btn s sm" data-c="ship" data-oid="${o.id}">حفظ التوصيل</button></div>`:`<div class="row"><b>🚚 التوصيل: ${fm(+o.shipping)} ج.م</b></div>`;
+    return`<div class="ord"><div class="row"><b>#${o.id}</b><span>${E(o.name)}</span><span dir="ltr">${E(o.phone)}</span><span class="pill ${dv?"g2":cxd?"z":""}">${stg}</span><span class="mu">${new Date(o.created_at).toLocaleString("ar-EG")}</span></div>
 <div class="mu">${E(o.address||"")} ${o.note?"· "+E(o.note):""}</div>
-${it.map(i=>`<div class="row"><span>${i.is_digital?"📥":"🛒"} ${E(i.name)} × ${i.qty} = ${fm(i.price*i.qty)}</span><span class="mu">(${E(mn(i.merchant_id))})</span><span class="pill ${i.status==="done"?"g2":""}">${i.status==="done"?"تم التسليم":"جديد"}</span><button class="btn d sm" data-a="deli" data-id="${i.id}">حذف البيع</button></div>`).join("")}
-<div class="row"><b>الإجمالي ${fm(+o.total)} (شحن ${fm(+o.shipping)})</b><button class="btn sm" data-a="ok" data-id="${o.id}">تم التسليم ✔</button><button class="btn d sm" data-a="delo" data-id="${o.id}">حذف الطلب</button></div></div>`}).join("")||'<div class="card mu">مفيش طلبات لسه</div>'}
-$("orders").onclick=async ev=>{
-  const b=ev.target.closest("[data-a]");if(!b)return;const id=+b.dataset.id,a=b.dataset.a;let r;
-  if(a==="ok"){r=await sb.from("shop_order_items").update({status:"done"}).eq("order_id",id);if(!r.error)r=await sb.from("shop_orders").update({status:"done"}).eq("id",id)}
-  else if(a==="deli"){if(!confirm("حذف البيع ده من السجل؟"))return;r=await sb.from("shop_order_items").delete().eq("id",id)}
-  else if(a==="delo"){if(!confirm("حذف الطلب كله؟"))return;r=await sb.from("shop_orders").delete().eq("id",id)}
-  r&&r.error?msg(r.error.message):load()};
+${it.map(i=>`<div class="irow"><div class="row"><span>🛒 ${E(i.name)} × ${i.qty} = ${fm(i.price*i.qty)} ج.م</span><span class="mu">(${E(mname(i.merchant_id))})</span><span class="pill ${i.ready?"g2":""}">${i.ready?"جاهز ✔":"⏳"}</span>${i.cancelled?'<span class="pill z">ملغي</span>':""}${i.req_qty!=null?`<span class="pill z">طلب تعديل إلى ${i.req_qty}</span><button class="btn sm" data-c="rchg" data-id="${i.id}" data-v="1">موافقة</button><button class="btn s sm" data-c="rchg" data-id="${i.id}" data-v="0">رفض</button>`:""}${open&&!i.cancelled?`<button class="btn s sm" data-c="adj" data-id="${i.id}" data-q="${i.qty}" data-p="${i.price}">تعديل</button>`:""}</div></div>`).join("")}
+${ship}
+<div class="row">${open&&!o.cancel_req?`<button class="btn sm${rdy?" s":""}" data-c="ready" data-oid="${o.id}" data-v="${rdy?0:1}">${rdy?"إلغاء الجاهزية":"جاهز للتسليم ✔"}</button>`:""}${o.cancel_req&&!cxd?`<button class="btn sm" data-c="rcxl" data-oid="${o.id}" data-v="1">تأكيد الإلغاء</button><button class="btn s sm" data-c="rcxl" data-oid="${o.id}" data-v="0">رفض الإلغاء</button>`:""}${!cxd?`<button class="btn d sm" data-c="acx" data-oid="${o.id}">${dv?"مرتجع / إلغاء":"إلغاء الأوردر"}</button>`:""}</div>
+${rd?`<div class="tl">🛵 ${E(rd.name)} · أخد ${tt(o.accepted_at)} · استلم ${tt(o.picked_at)} · سلّم ${tt(o.delivered_at)} — (أخد←استلم ${mn2(o.accepted_at,o.picked_at)}) (استلم←سلّم ${mn2(o.picked_at,o.delivered_at)}) (الإجمالي ${mn2(o.accepted_at,o.delivered_at)}) · سعر الأوردر ${fm(+o.total-+o.shipping)} · التوصيل ${fm(+o.shipping)}</div>`:""}
+<div class="row"><b>الإجمالي ${fm(+o.total)} ج.م (شامل التوصيل)</b><button class="btn d sm" data-a="delo" data-id="${o.id}">حذف نهائي</button></div></div>`}).join("")||'<div class="card mu">مفيش طلبات لسه</div>'}
+async function onOrd(ev){
+  if(await Act.click(ev,sb,load,msg))return;
+  const b=ev.target.closest("[data-a=delo]");if(!b)return;const id=+b.dataset.id;
+  if(!confirm("حذف الطلب نهائياً من قاعدة البيانات (للمسح فقط، مش للإلغاء)؟"))return;
+  const r=await sb.rpc("remove_order",{p_id:id,p_restock:confirm("نرجّع الكميات للمخزون؟ (OK = أيوه)")});r.error?msg(r.error.message):load()}
+$("orders").onclick=onOrd;$("pend").onclick=onOrd;
+
+/* ===== التقرير الشهري الشامل ===== */
+function buildRep(){
+  const y=+$("rp_y").value,m=+$("rp_m").value,R=monthBounds(y,m),title=monthNames[m]+" "+y;
+  const sold=OI.filter(i=>Conf.sold(i)&&inR(i.delivered_at,R)),cxO=OR.filter(o=>o.status==="cancelled"&&inR(o.cancelled_at,R));
+  const rows=a=>aggItems(a).map(x=>`<tr><td>${E(x.name)}</td><td>${x.qty}</td><td>${fm(x.price)}</td><td>${fm(x.qty*x.price)}</td></tr>`).join("")||'<tr><td colspan="4">—</td></tr>';
+  const tot=a=>a.reduce((s,i)=>s+i.price*i.qty,0),head='<thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>';
+  const own=sold.filter(i=>i.merchant_id==null),ownT=tot(own);let commT=0,feeT=0;
+  const sellers=MS.map(mm=>{const a=sold.filter(i=>i.merchant_id===mm.id),sl=tot(a),rt=PLANS[mm.plan]?PLANS[mm.plan].rate:COMMISSION,c=sl*rt,fee=(!mm.created_at||new Date(mm.created_at)<R[1])&&mm.is_active?(PLANS[mm.plan]?PLANS[mm.plan].fee:0):0;commT+=c;feeT+=fee;
+    return`<h4>${E(mm.name)} <small>(${PLANS[mm.plan]?PLANS[mm.plan].n:mm.plan})</small></h4><table>${head}<tbody>${rows(a)}</tbody></table><p>المبيعات: <b>${fm(sl)}</b> · عمولة ${rt*100}%: <b>${fm(c)}</b> · اشتراك الباقة: <b>${fee}</b></p>`}).join("")||"<p>—</p>";
+  let rsT=0;const dl=OR.filter(o=>o.rider_status==="delivered"&&o.rider_id&&o.status!=="cancelled"&&inR(o.delivered_at,R)),RF=foldR(dl);
+  const riders=RD.map(r=>{const x=RF[r.id]||{n:0,f:0},sh=x.f*RIDER_RATE;rsT+=sh;return`<tr><td>${E(r.name)}</td><td>${x.n}</td><td>${fm(x.f)}</td><td>${fm(sh)}</td></tr>`}).join("")||'<tr><td colspan="4">—</td></tr>';
+  const net=ownT+commT+feeT+rsT;
+  return`<div class="rep"><h2>الفاتورة والتقرير الشهري الشامل — ${title}</h2><p>yala-eg · أوردرات مسلّمة فقط · الملغي والمرتجع غير محسوب (${cxO.length} أوردر ملغي/مرتجع)</p>
+<h3>1) مبيعاتي الشخصية (منتجات المالك)</h3><table>${head}<tbody>${rows(own)}</tbody></table><p>إجمالي مبيعاتي: <b>${fm(ownT)}</b></p>
+<h3>2) أرباحي من البائعين</h3>${sellers}<p>إجمالي العمولات: <b>${fm(commT)}</b> · إجمالي الاشتراكات: <b>${fm(feeT)}</b></p>
+<h3>3) أرباحي من الطيارين (${RIDER_RATE*100}%)</h3><table><thead><tr><th>الطيار</th><th>أوردرات</th><th>إجمالي التوصيل</th><th>نسبتي</th></tr></thead><tbody>${riders}</tbody></table><p>إجمالي نسبتي من التوصيل: <b>${fm(rsT)}</b></p>
+<h3>4) ملخص الإيرادات النهائي</h3><table><tbody><tr><td>مبيعاتي الشخصية</td><td>${fm(ownT)}</td></tr><tr><td>عمولات البائعين</td><td>${fm(commT)}</td></tr><tr><td>اشتراكات الباقات</td><td>${fm(feeT)}</td></tr><tr><td>نسبة التوصيل</td><td>${fm(rsT)}</td></tr><tr><th>صافي دخل المنصة</th><th>${fm(net)} ج.م</th></tr></tbody></table><small>الاشتراكات محسوبة حسب باقات البائعين الحالية.</small></div>`}
+function renderRep(){if($("rpout"))$("rpout").innerHTML=buildRep()}
+
+/* ===== الطيارين ===== */
+function renderR(){
+  $("rtb").innerHTML=RD.map(r=>`<tr><td>${E(r.name)}</td><td dir="ltr">${E(r.phone||"")}<small class="mu">${E(r.email||"")}</small></td>
+<td><select data-a="rm" data-id="${r.id}"><option value="">طيار عام للمنصة</option>${MS.map(m=>`<option value="${m.id}"${r.merchant_id===m.id?" selected":""}>${E(m.name)}</option>`).join("")}</select></td>
+<td>${rr(r)}</td><td><span class="pill ${r.is_active?"g2":"z"}">${r.is_active?"شغال":"موقوف"}</span></td>
+<td class="act"><button class="btn s sm" data-a="re" data-id="${r.id}">تعديل</button><button class="btn s sm" data-a="rt" data-id="${r.id}">${r.is_active?"إيقاف":"تفعيل"}</button><button class="btn d sm" data-a="rd" data-id="${r.id}">حذف</button></td></tr>`).join("")||'<tr><td colspan="6" class="mu">مفيش طيارين</td></tr>';
+  $("r_mid").innerHTML='<option value="">طيار عام للمنصة</option>'+MS.map(m=>`<option value="${m.id}">${E(m.name)}</option>`).join("")}
+async function ru(id,patch){const{data,error}=await sb.from("riders").update(patch).eq("id",id).select("id");if(error||!data.length)return msg(error?error.message:"مفيش صلاحية");load()}
+$("rtb").onclick=async ev=>{
+  const b=ev.target.closest("button[data-a]");if(!b)return;const id=+b.dataset.id,r=RD.find(x=>x.id===id),a=b.dataset.a;
+  if(a==="rt")ru(id,{is_active:!r.is_active});
+  else if(a==="re"){const n=prompt("الاسم الثلاثي",r.name);if(n===null)return;const p=prompt("رقم الهاتف",r.phone||"");if(p===null)return;ru(id,{name:n.trim()||r.name,phone:p.trim()})}
+  else if(a==="rd"){if(!confirm("حذف الطيار "+r.name+"؟"))return;const{error}=await sb.from("riders").delete().eq("id",id);if(error)return msg(error.message);msg("اتحذف (حساب الدخول امسحه من Supabase > Authentication > Users)");load()}};
+$("rtb").onchange=ev=>{const s=ev.target;if(s.dataset.a==="rm")ru(+s.dataset.id,{merchant_id:s.value?+s.value:null})};
+$("rf").onsubmit=async ev=>{
+  ev.preventDefault();const v=id=>$(id).value.trim(),email=v("r_email").toLowerCase();
+  const tmp=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  const{data,error}=await tmp.auth.signUp({email,password:v("r_pw")});
+  if(error)return msg("فشل إنشاء الحساب: "+error.message+" — فعّل Allow new users to sign up وقفل Confirm email");
+  if(!data.user||(data.user.identities&&!data.user.identities.length))return msg("الإيميل ده مستخدم قبل كده");
+  const{error:e2}=await sb.from("riders").insert({user_id:data.user.id,name:v("r_name"),phone:v("r_phone"),email,merchant_id:$("r_mid").value?+$("r_mid").value:null});
+  if(e2)return msg(e2.message);msg("اتضاف الطيار ✔ (ابعتله الهاتف والباسورد ورابط rider.html)");$("rf").reset();load()};
+
+/* ===== الإعدادات والبث ===== */
+function setFields(){$("sp_ph").value=(ST.support||{}).phone||"";$("lg_url").value=(ST.logo||{}).url||"";$("hr_tx").value=(ST.hero||{}).text||"";prevLogo();const b=ST.banner||{on:true,text:""},f=ST.footer||{on:true,text:""};$("bn_on").checked=b.on!==false;$("bn_tx").value=b.text||"";$("ft_on").checked=f.on!==false;$("ft_tx").value=f.text||""}
+async function saveSet(k,on,tx){const{error}=await sb.from("settings").upsert({key:k,value:{on:$(on).checked,text:$(tx).value.trim()},updated_at:new Date().toISOString()});error?msg(error.message):msg("اتحفظ ✔ وبيظهر في الموقع فوراً")}
+function prevLogo(){const v=$("lg_url").value.trim(),i=$("lg_prev");if(!v){i.hidden=true;return}i.hidden=false;i.className="prev";i.onerror=()=>{i.className="prev bad"};i.src=imgSrc(v)}
+$("lg_url").oninput=prevLogo;
+$("id_sv").onclick=async()=>{const ph=$("sp_ph").value.trim();if(ph&&!/^0?1\d{9}$/.test(ph.replace(/\D/g,"")))return msg("رقم خدمة العملاء غير صحيح");
+  const t=new Date().toISOString(),{error}=await sb.from("settings").upsert([{key:"support",value:{phone:ph},updated_at:t},{key:"logo",value:{url:$("lg_url").value.trim()},updated_at:t},{key:"hero",value:{text:$("hr_tx").value.trim()},updated_at:t}]);
+  error?msg(error.message):msg("اتحفظ ✔ وبيظهر في الموقع فوراً")};
+$("bn_sv").onclick=()=>saveSet("banner","bn_on","bn_tx");$("ft_sv").onclick=()=>saveSet("footer","ft_on","ft_tx");
+function renderSet(){
+  if(!renderSet.d){renderSet.d=1;setFields()}
+  $("bc_n").textContent=PS;
+  $("bc_h").innerHTML=BC.map(b=>`<div class="irow"><b>${E(b.title)}</b> <span class="mu">${new Date(b.created_at).toLocaleString("ar-EG")}</span><div class="mu">${E(b.body||"")}</div><button class="btn d sm" data-a="bcd" data-id="${b.id}">حذف</button></div>`).join("")||'<div class="mu">مفيش إشعارات سابقة</div>'}
+$("bc_h").onclick=async ev=>{const b=ev.target.closest("[data-a=bcd]");if(!b)return;await sb.from("broadcasts").delete().eq("id",+b.dataset.id);load()};
+$("bc_go").onclick=async()=>{
+  const t=$("bc_t").value.trim(),b=$("bc_b").value.trim(),u=$("bc_u").value.trim();if(!t)return msg("اكتب عنوان الإشعار");
+  if(!confirm("إرسال الإشعار لكل الزوار؟"))return;
+  const{error}=await sb.from("broadcasts").insert({title:t,body:b||null,url:u||null});if(error)return msg(error.message);
+  let res="اتسجّل ✔ وكل زائر بيفتح الموقع هيشوفه";
+  try{
+    const{data:{session}}=await sb.auth.getSession();
+    const r=await fetch(SUPABASE_URL+"/functions/v1/broadcast",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token,apikey:SUPABASE_KEY},body:JSON.stringify({mode:"broadcast",title:t,body:b,url:u||"./"})});
+    const j=await r.json();res+=r.ok?` · وإشعار فوري اتبعت لـ ${j.sent} جهاز${j.failed?` (فشل ${j.failed})`:""}`:` · الإشعار الفوري مفعّلش: ${j.error||r.status}`;
+  }catch(x){res+=" · الإشعار الفوري مش متفعّل (انشر دالة broadcast في Supabase)"}
+  $("bc_r").textContent=res;$("bc_t").value=$("bc_b").value=$("bc_u").value="";load()};
+
 init();
-</script></body></html>
+</script>
+<script src="install.js"></script></body></html>
