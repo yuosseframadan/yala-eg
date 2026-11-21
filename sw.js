@@ -1,4 +1,4 @@
-const CACHE = "yala-eg-v5";
+const CACHE = "yala-eg-v6";
 const SHELL = ["./", "index.html", "logo.png", "icon-192.png", "icon-512.png", "manifest.json", "products.js", "install.js"];
 const NOTE = { icon: "icon-192.png", badge: "icon-192.png", dir: "rtl", lang: "ar" };
 
@@ -21,7 +21,6 @@ self.addEventListener("fetch", e => {
   );
 });
 
-// إشعار فوري من السيرفر (بث المشرف + تذكير السلة)
 self.addEventListener("push", e => {
   let d = {};
   try { d = e.data.json(); } catch (x) { d = { title: "yala-eg", body: e.data ? e.data.text() : "" }; }
@@ -37,16 +36,15 @@ self.addEventListener("notificationclick", e => {
   }));
 });
 
-// تذكيرات في الخلفية (أندرويد/كروم للتطبيق المثبّت)
 self.addEventListener("periodicsync", e => {
   if (e.tag === "yala-remind") {
-    e.waitUntil(self.registration.showNotification("🛍️ وحشتنا في yala-eg", { ...NOTE, body: "في عروض ومنتجات جديدة، تعالى شوفها", data: { url: "./#/" } }));
+    e.waitUntil(self.registration.showNotification("وحشتنا في yala-eg", { ...NOTE, body: "في عروض ومنتجات جديدة، تعالى شوفها", data: { url: "./#/" } }));
   } else if (e.tag === "yala-cart") {
     e.waitUntil((async () => {
       const c = await caches.open("yala-state"), r = await c.match("state"); if (!r) return;
       const s = await r.json();
       if (s.has && s.cartAt && Date.now() - s.cartAt >= 864e5 && !s.notified) {
-        await self.registration.showNotification("🛒 سلتك لسه مستنياك في yala-eg!", { ...NOTE, body: "كمل طلبك بسرعة والحق العروض قبل ما تخلص", data: { url: "./#/" } });
+        await self.registration.showNotification("سلتك لسه مستنياك في yala-eg", { ...NOTE, body: "كمل طلبك بسرعة والحق العروض قبل ما تخلص", data: { url: "./#/" } });
         s.notified = 1; await c.put("state", new Response(JSON.stringify(s)));
       }
     })());

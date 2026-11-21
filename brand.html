@@ -4,7 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#0b0b0b"><title>لوحة البائع | yala-eg</title>
 <link rel="manifest" href="manifest-brand.json"><link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="panel.css">
 </head>
 <body><div class="w">
@@ -18,13 +18,18 @@
 <div id="panel" hidden>
   <div class="top card"><span><b id="bn"></b> <span class="mu" id="who"></span></span><span><button class="btn s sm" id="rf5">🔄 تحديث</button> <button class="btn s sm" id="out">تسجيل خروج</button></span></div>
   <div id="warn"></div>
+  <div class="card"><button class="btn" id="spo">➕ أوردر خاص</button> <span class="mu">سجّل أوردر لعميل من عندك وهينزل للطيارين</span></div>
+  <div id="spv" hidden></div>
+  <div id="main">
   <div id="pend"></div>
   <div class="stats" id="st"></div>
+  <div class="card"><details id="dues"><summary><b>💰 الفلوس المستحقة</b> <span class="mu" id="dues_sum"></span></summary><div id="dues_list" style="margin-top:8px"></div></details></div>
   <div class="card"><h3>📦 أوردراتي</h3><div id="ords"></div></div>
   <div class="card"><h3 id="ft">إضافة منتج</h3><div id="pfw"></div></div>
   <div class="card"><div class="row"><input id="q" placeholder="🔍 بحث في منتجاتي" style="flex:1"><span class="mu"><b id="cnt">0</b> منتج</span></div>
     <div class="tw"><table><thead><tr><th></th><th>المنتج</th><th>السعر</th><th>الكمية</th><th></th></tr></thead><tbody id="tb"></tbody></table></div></div>
   <div class="card"><h3>📄 كشف الحساب الشهري</h3><div class="row"><span id="rpsel"></span><button class="btn" id="rp_go">عرض</button><button class="btn s" id="rp_pr">🖨 طباعة / حفظ PDF</button></div><div id="rpout" style="margin-top:10px"></div></div>
+</div>
 </div></div>
 <div id="printArea"></div>
 
@@ -32,8 +37,8 @@
 <script src="products.js"></script>
 <script>
 const $=id=>document.getElementById(id),sb=window.sb,E=esc;
-let M=null,PR=[],OI=[],PAY=[],editId=null,mt,lastPend=-1;
-function msg(t){const m=$("m");m.textContent=t;clearTimeout(mt);mt=setTimeout(()=>m.textContent="",4500)}
+let M=null,PR=[],OI=[],PAY=[],DUES={groups:[],transit:[],done:[]},SPL=[],AREAS=(window.AREAS||[]).slice(),editId=null,mt,lastPend=-1;
+function msg(t){const m=$("m");m.textContent=friendly(t);clearTimeout(mt);mt=setTimeout(()=>m.textContent="",4500)}
 function show(l){$("login").hidden=l;$("panel").hidden=!l}
 try{$("em").value=localStorage.getItem("brand_id")||""}catch(x){}
 async function init(){
@@ -48,25 +53,24 @@ async function enter(u){
   $("pfw").innerHTML=PF.html(false);PF.bind();$("pf").onsubmit=saveP;$("p_cl").onclick=resetP;$("rpsel").innerHTML=monthSel();$("rp_go").onclick=renderRep;$("rp_pr").onclick=()=>printHtml(buildRep());
   const sn=snap.get("brand");if(sn&&sn.M&&sn.M.id===M.id){({PR,OI,PAY}=sn);renderAll()}
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)load()});$("rf5").onclick=()=>{load();msg("جاري التحديث…")};
-  load()}
+  loadAreas();load()}
 $("go").onclick=async()=>{
   $("le").textContent="";if(!sb)return $("le").textContent="Supabase مش متصل";
   let id=$("em").value.trim();if(!id||!$("pw").value)return $("le").textContent="اكتب البريد/الهاتف والباسورد";
   try{localStorage.setItem("brand_id",id)}catch(x){}
-  if(!id.includes("@")){const r=await sb.rpc("login_email",{p:id});if(r.error||!r.data)return $("le").textContent="رقم الهاتف ده مش مسجل";id=r.data}
-  const{data,error}=await sb.auth.signInWithPassword({email:id,password:$("pw").value});
-  if(error)return $("le").textContent="بيانات الدخول غلط";
-  $("pw").value="";enter(data.user)};
+  const r=await signIn(sb,id,$("pw").value);
+  if(r.error)return $("le").textContent=r.error;
+  $("pw").value="";enter(r.user)};
 $("out").onclick=async()=>{await sb.auth.signOut();location.reload()};
 
 async function load(){
   const r=await Promise.all([fetchAll(()=>sb.from("products").select("*").eq("merchant_id",M.id).order("id",{ascending:false})),
     fetchAll(()=>sb.from("shop_order_items").select("*").eq("merchant_id",M.id).order("id",{ascending:false})),
     sb.from("shop_payments").select("*").eq("merchant_id",M.id),sb.from("merchants").select("*").eq("id",M.id).maybeSingle()]);
-  const bad=r.find(x=>x.error);if(bad)msg("خطأ: "+bad.error.message);
+  const bad=r.find(x=>x.error);if(bad)msg(bad.error.message);
   PR=r[0].data||[];OI=r[1].data||[];PAY=r[2].data||[];if(r[3].data)M=r[3].data;
-  snap.set("brand",{M,PR,OI,PAY});renderAll()}
-function renderAll(){renderInfo();renderPend();renderOrders();renderP();renderRep()}
+  snap.set("brand",{M,PR,OI,PAY});renderAll();loadDues();if(!$("spv").hidden)loadSpList()}
+function renderAll(){renderInfo();renderPend();renderOrders();renderP();renderRep();renderDues()}
 
 /* ===== الباقة والإحصائيات ===== */
 const plan=()=>PLANS[M.plan]||PLANS.p1;
@@ -78,8 +82,8 @@ function renderInfo(){
   else if(days!=null&&days<-3)w='<div class="card" style="border-color:#e0405a"><b>⛔ باقتك انتهت ومنتجاتك مخفية من الموقع.</b> أول ما تجدد وتدفع بترجع تظهر فوراً.</div>';
   else if(days!=null&&days<=5)w=`<div class="card" style="border-color:var(--o)">⏳ باقتك بتنتهي بعد ${days} يوم. جدّد قبل ما تخلص.</div>`;
   $("warn").innerHTML=w;
-  const sold=OI.filter(Conf.sold),sales=sold.reduce((a,i)=>a+i.price*i.qty,0),due=sales*p.rate,paid=PAY.reduce((a,x)=>a+ +x.amount,0);
-  $("st").innerHTML=`<div><b>${p.n}</b>باقتك</div><div><b>${end?end.toLocaleDateString("ar-EG"):"—"}</b>تنتهي ${days==null?"":days<0?"(منتهية!)":"بعد "+days+" يوم"}</div><div><b>${PR.length} / ${p.max===Infinity?"∞":p.max}</b>منتجاتك (المتبقي ${p.max===Infinity?"∞":Math.max(0,p.max-PR.length)})</div><div><b>${p.fee}</b>اشتراك شهري</div><div><b>${fm(sales)}</b>مبيعاتك المسلّمة</div><div><b>${p.rate*100}%</b>عمولة الموقع</div><div><b>${fm(due)}</b>عمولة للموقع</div><div><b>${fm(paid)}</b>اللي سدّدته</div><div><b>${fm(due-paid)}</b>المتبقي عليك</div>`}
+  const sold=OI.filter(Conf.sold),sales=sold.reduce((a,i)=>a+i.price*i.qty,0),due=sold.reduce((a,i)=>a+i.price*i.qty*itemRate(i,M.plan),0),paid=PAY.reduce((a,x)=>a+ +x.amount,0);
+  $("st").innerHTML=`<div><b>${p.n}</b>باقتك</div><div><b>${end?end.toLocaleDateString("ar-EG"):"—"}</b>تنتهي ${days==null?"":days<0?"(منتهية!)":"بعد "+days+" يوم"}</div><div><b>${PR.length} / ${p.max===Infinity?"∞":p.max}</b>منتجاتك (المتبقي ${p.max===Infinity?"∞":Math.max(0,p.max-PR.length)})</div><div><b>${p.fee}</b>اشتراك شهري</div><div><b>${fm(sales)}</b>مبيعاتك المسلّمة</div><div><b>${p.rate*100}%</b>عمولة الموقع (أوردراتك الخاصة ${SPECIAL_RATE*100}%)</div><div><b>${fm(due)}</b>عمولة للموقع</div><div><b>${fm(paid)}</b>اللي سدّدته</div><div><b>${fm(due-paid)}</b>المتبقي عليك</div>`}
 
 /* ===== الأوردرات ===== */
 function groups(){const g={};OI.forEach(i=>(g[i.order_id]=g[i.order_id]||[]).push(i));return Object.entries(g).map(([id,it])=>({id:+id,it})).sort((a,b)=>b.id-a.id)}
@@ -98,11 +102,21 @@ function renderOrders(){
     else if(st==="delivered")acts='<span class="mu">اتسلّم للعميل، مينفعش الإلغاء.</span>';
     else{
       if(open&&!cx)acts+=readyOf(g)?`<button class="btn s sm" data-c="ready" data-oid="${g.id}" data-v="0">إلغاء الجاهزية</button><span class="pill g2">جاهز، نزل للطيارين ✔</span>`:`<button class="btn sm" data-c="ready" data-oid="${g.id}" data-v="1">جاهز للتسليم ✅</button>`;
+      if(open&&!cx&&g.it[0].product_id)acts+=`<button class="btn d sm" data-b="oos" data-oid="${g.id}">الكمية منتهية</button>`;
       acts+=cx?`<span class="pill z">طلب الإلغاء بانتظار موافقة المالك</span><button class="btn s sm" data-c="cxl" data-oid="${g.id}" data-v="0">سحب طلب الإلغاء</button>`:`<button class="btn d sm" data-c="cxl" data-oid="${g.id}" data-v="1">لم يتم الأوردر ❌</button>`}
     return`<div class="ord"><div class="row"><b>#${g.id}</b><span class="pill ${st==="delivered"?"g2":st==="cancelled"?"z":""}">${STX[st]||st}</span><span class="mu">${new Date(g.it[0].created_at).toLocaleString("ar-EG")}</span></div>
-${g.it.map(i=>`<div class="irow"><div class="row"><span>🛒 ${E(i.name)} × ${i.qty} = ${fm(i.price*i.qty)} ج.م</span>${i.req_qty!=null?`<span class="pill z">طلب تعديل إلى ${i.req_qty} (بانتظار المالك)</span>`:""}${open&&!cx&&!i.cancelled?`<button class="btn s sm" data-c="chg" data-id="${i.id}">طلب تعديل الكمية</button>`:""}</div></div>`).join("")}
+${g.it.map(i=>`<div class="irow"><div class="row"><span>🛒 ${E(i.name)} × ${i.qty} = ${fm(i.price*i.qty)} ج.م</span>${i.req_qty!=null?`<span class="pill z">طلب تعديل إلى ${i.req_qty} (بانتظار المالك)</span>`:""}${open&&!cx&&!i.cancelled&&i.product_id?`<button class="btn s sm" data-b="less" data-id="${i.id}" data-q="${i.qty}">تتوفر كمية أقل</button>`:""}</div></div>`).join("")}
 <div class="row">${acts}</div></div>`}).join("")||'<div class="mu">مفيش أوردرات لسه</div>'}
-$("pend").onclick=$("ords").onclick=ev=>Act.click(ev,sb,load,msg);
+$("pend").onclick=$("ords").onclick=async ev=>{
+  const b=ev.target.closest("[data-b]");
+  if(b){
+    if(b.dataset.b==="oos"){if(!confirm("هنبلّغ العميل إن الكمية خلصت وهيتلغى الأوردر وهيتصفّر مخزون المنتج. متأكد؟"))return;
+      const r=await sb.rpc("merchant_out_of_stock",{p_oid:+b.dataset.oid});r.error?msg(r.error.message):(msg("تم إبلاغ العميل وإلغاء الأوردر"),load())}
+    else if(b.dataset.b==="less"){const q=+b.dataset.q,v=prompt("الكمية المتاحة عندك (أقل من "+q+"):");if(v==null)return;const n=parseInt(v,10);
+      if(!(n>=0&&n<q))return msg("اكتب رقم أقل من "+q);
+      const r=await sb.rpc("merchant_less_stock",{p_item:+b.dataset.id,p_avail:n});r.error?msg(r.error.message):(msg("تم إبلاغ العميل وبعتنا طلب التعديل للمالك"),load())}
+    return}
+  Act.click(ev,sb,load,msg)};
 
 /* ===== المنتجات ===== */
 const nz=s=>String(s||"").toLowerCase().replace(/[\u064B-\u065F\u0640]/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه");
@@ -125,14 +139,66 @@ async function saveP(ev){
 function buildStatement(){
   const y=+$("rp_y").value,m=+$("rp_m").value,R=monthBounds(y,m),p=plan(),title=monthNames[m]+" "+y;
   const sold=OI.filter(i=>Conf.sold(i)&&inR(i.delivered_at,R)),cx=OI.filter(i=>i.cancelled&&inR(i.cancelled_at,R));
-  const sales=sold.reduce((a,i)=>a+i.price*i.qty,0),comm=sales*p.rate,fee=p.fee,net=sales-comm-fee;
+  const sales=sold.reduce((a,i)=>a+i.price*i.qty,0),comm=sold.reduce((a,i)=>a+i.price*i.qty*itemRate(i,M.plan),0),fee=p.fee,net=sales-comm-fee;
   const rows=a=>aggItems(a).map(x=>`<tr><td>${E(x.name)}</td><td>${x.qty}</td><td>${fm(x.price)}</td><td>${fm(x.qty*x.price)}</td></tr>`).join("")||'<tr><td colspan="4">—</td></tr>';
   const cxo=[...new Set(cx.map(i=>i.order_id))];
   return`<div class="rep"><h2>كشف الحساب الشهري — ${title}</h2><p><b>${E(M.name)}</b> · ${p.n} · yala-eg</p>
 <h3>المبيعات المؤكدة (أوردرات اتسلّمت)</h3><table><thead><tr><th>المنتج</th><th>الكمية المباعة</th><th>السعر</th><th>الإجمالي</th></tr></thead><tbody>${rows(sold)}</tbody></table>
 <h3>الأوردرات الملغاة أو المرتجعة (غير محسوبة)</h3>${cxo.length?`<table><thead><tr><th>أوردر</th><th>الأصناف</th></tr></thead><tbody>${cxo.map(id=>`<tr><td>#${id}</td><td>${cx.filter(i=>i.order_id===id).map(i=>E(i.name)+" × "+i.qty).join("، ")}</td></tr>`).join("")}</tbody></table>`:"<p>لا يوجد</p>"}
-<h3>الملخص</h3><table><tbody><tr><td>إجمالي المبيعات المؤكدة</td><td>${fm(sales)}</td></tr><tr><td>عمولة المنصة (${p.rate*100}%)</td><td>${fm(comm)}</td></tr><tr><td>اشتراك الباقة الشهري</td><td>${fee}</td></tr><tr><th>صافي أرباحك</th><th>${fm(net)} ج.م</th></tr></tbody></table></div>`}
+<h3>الملخص</h3><table><tbody><tr><td>إجمالي المبيعات المؤكدة</td><td>${fm(sales)}</td></tr><tr><td>عمولة المنصة (${p.rate*100}% وأوردراتك الخاصة ${SPECIAL_RATE*100}%)</td><td>${fm(comm)}</td></tr><tr><td>اشتراك الباقة الشهري</td><td>${fee}</td></tr><tr><th>صافي أرباحك</th><th>${fm(net)} ج.م</th></tr></tbody></table></div>`}
 const buildRep=buildStatement;function renderRep(){if($("rpout"))$("rpout").innerHTML=buildStatement()}
+/* ===== الفلوس المستحقة (الطيار بيسلّم الكاش وبيدخل كود التأكيد) ===== */
+async function loadDues(){const r=await sb.rpc("merchant_dues");if(r.error)return;DUES=r.data||{groups:[],transit:[],done:[]};renderDues()}
+function renderDues(){
+  const D=DUES&&DUES.groups?DUES:{groups:[],transit:[],done:[]},tot=D.groups.reduce((a,g)=>a+ +g.total,0),tr=D.transit.reduce((a,x)=>a+ +x.due,0);
+  $("dues_sum").textContent="مستحق لك عند الطيارين: "+fm(tot)+" ج.م"+(tr?" · لسه مع الطيار في الطريق: "+fm(tr)+" ج.م":"");
+  $("dues_list").innerHTML=(D.groups.map(g=>`<div class="irow"><div class="row"><b>الطيار: ${E(g.rider)}</b>${g.rider_phone?`<a class="btn s sm" href="tel:${E(g.rider_phone)}">📞 ${E(g.rider_phone)}</a>`:""}<span>المبلغ المستحق: <b>${fm(+g.total)} ج.م</b> (قيمة المنتجات كاملة بدون توصيل)</span></div>
+    <div class="row"><span>كود التأكيد: <b style="font-size:26px;letter-spacing:6px;color:var(--o)" dir="ltr">${E(g.code||"—")}</b></span><span class="mu">سلّمه للطيار بعد ما تستلم الكاش منه</span>${g.locked?'<span class="pill z">الإدخال مقفول مؤقتاً</span>':""}<button class="btn s sm" data-b="newcode" data-rid="${g.rider_id}">كود جديد</button></div>
+    <div class="mu">${g.orders.map(o=>"#"+o.id+" ("+fm(+o.due)+")").join("، ")}</div></div>`).join("")||'<div class="mu">مفيش فلوس مستحقة دلوقتي</div>')
+   +D.transit.map(x=>`<div class="irow mu">أوردر #${x.id} خرج مع ${E(x.rider||"—")} — ${fm(+x.due)} ج.م (لسه متسلمش للعميل)</div>`).join("")
+   +D.done.map(x=>`<div class="irow mu">${E(x.rider||"—")} سلّم ${fm(+x.due)} ج.م <span class="pill g2">تم التسليم للتاجر ✅</span> ${new Date(x.at).toLocaleString("ar-EG")}</div>`).join("")}
+$("dues_list").onclick=async ev=>{const b=ev.target.closest('[data-b="newcode"]');if(!b)return;
+  if(!confirm("إصدار كود جديد؟ الكود القديم هيبطل."))return;
+  const r=await sb.rpc("merchant_refresh_code",{p_rider:+b.dataset.rid});r.error?msg(r.error.message):(msg("اتصدر كود جديد"),loadDues())};
+
+/* ===== أوردر خاص ===== */
+async function loadAreas(){try{const r=await sb.from("settings").select("value").eq("key","areas").maybeSingle();const l=r.data&&r.data.value&&r.data.value.list;if(Array.isArray(l)&&l.length)AREAS=l.map(String)}catch(x){}}
+const spRow=()=>`<div class="row sprow"><input class="sn" placeholder="اسم المنتج" maxlength="100" style="flex:2"><input class="sq" type="number" min="1" max="99" value="1" title="الكمية" style="width:70px"><input class="sp" type="number" min="0" step="any" placeholder="السعر" title="سعر القطعة" style="width:90px"><button type="button" class="btn d sm sx">✕</button></div>`;
+const SPS={open:"مستني طيار",accepted:"طيار أخده",picked:"مع الطيار",delivered:"تم التسليم",cancelled:"ملغي"};
+function spSum(){let t=0;document.querySelectorAll("#sp_rows .sprow").forEach(r=>{t+=(+r.querySelector(".sq").value||0)*(+r.querySelector(".sp").value||0)});$("sp_sum").textContent="إجمالي المنتجات: "+fm(t)+" ج.م (التوصيل بيتضاف تلقائي)"}
+function openSp(){
+  $("main").hidden=true;$("spv").hidden=false;
+  $("spv").innerHTML=`<div class="card"><div class="row"><h3>أوردر خاص</h3><button class="btn s sm" id="spb">رجوع</button></div>
+  <p class="mu">اكتب بيانات الأوردر والعميل، وهينزل للطيارين يستلموه منك ويوصلوه للعميل. نسبة المنصة ${SPECIAL_RATE*100}% من سعر المنتجات + مصاريف التوصيل زي باقي الأوردرات. أقصى قيمة للأوردر 600 جنيه.</p>
+  <form id="spf"><label>اسم العميل</label><input id="sp_n" required maxlength="100"><label>رقم موبايل العميل</label><input id="sp_p" required dir="ltr" inputmode="numeric" placeholder="01xxxxxxxxx">
+  <label>المنطقة</label><select id="sp_a" required><option value="">اختار المنطقة</option>${AREAS.map(a=>`<option>${E(a)}</option>`).join("")}</select>
+  <label>عنوان العميل بالتفصيل</label><input id="sp_d" required maxlength="300"><label>ملاحظات (اختياري)</label><input id="sp_t" maxlength="300">
+  <h4>المنتجات (الاسم، الكمية، السعر)</h4><div id="sp_rows">${spRow()}</div><button type="button" class="btn s sm" id="sp_add">+ إضافة منتج</button>
+  <div class="mu" id="sp_sum" style="margin:8px 0"></div><button class="btn" id="sp_go">تسجيل الأوردر</button></form><div id="sp_res"></div></div>
+  <div class="card"><h3>أوردراتي الخاصة</h3><div id="sp_list"></div></div>`;
+  $("spb").onclick=closeSp;
+  $("sp_add").onclick=()=>{if(document.querySelectorAll("#sp_rows .sprow").length>=20)return msg("أقصى عدد 20 منتج");$("sp_rows").insertAdjacentHTML("beforeend",spRow())};
+  $("sp_rows").oninput=spSum;
+  $("sp_rows").onclick=ev=>{if(ev.target.closest(".sx")&&document.querySelectorAll("#sp_rows .sprow").length>1){ev.target.closest(".sprow").remove();spSum()}};
+  $("spf").onsubmit=submitSp;spSum();loadSpList()}
+function closeSp(){$("spv").hidden=true;$("main").hidden=false}
+async function submitSp(ev){
+  ev.preventDefault();if($("sp_go").dataset.busy==="1")return;$("sp_go").dataset.busy="1";setTimeout(()=>{$("sp_go").dataset.busy="0"},1500);const items=[...document.querySelectorAll("#sp_rows .sprow")].map(r=>({name:r.querySelector(".sn").value.trim(),qty:+r.querySelector(".sq").value||0,price:+r.querySelector(".sp").value||0}));
+  if(items.some(i=>i.name.length<2||i.qty<1||!(i.price>0)))return msg("اكتب اسم وكمية وسعر صحيح لكل منتج");
+  const phone=$("sp_p").value.replace(/\s/g,""),btn=$("sp_go");btn.disabled=true;
+  const r=await sb.rpc("merchant_create_order",{p_name:$("sp_n").value.trim(),p_phone:phone,p_area:$("sp_a").value,p_address:$("sp_d").value.trim(),p_note:$("sp_t").value.trim(),p_items:items});
+  btn.disabled=false;if(r.error)return msg(r.error.message);
+  const o=r.data;
+  $("sp_res").innerHTML=`<div class="pinbox" style="border:1px dashed var(--o);border-radius:6px;padding:10px;margin-top:10px;text-align:center">تم تسجيل الأوردر #${o.id} ونزل للطيارين<br>كود التسليم: <b style="font-size:28px;letter-spacing:6px;color:var(--o)" dir="ltr">${E(o.pin)}</b><div class="mu">قول الكود للعميل. التوصيل ${fm(+o.ship)} ج.م والإجمالي ${fm(+o.total)} ج.م.</div></div>`;
+  $("spf").reset();$("sp_rows").innerHTML=spRow();spSum();loadSpList()}
+async function loadSpList(){
+  const r=await sb.rpc("merchant_special_orders");if(r.error||!$("sp_list"))return;SPL=r.data||[];
+  $("sp_list").innerHTML=SPL.length?SPL.map(o=>`<div class="irow"><div class="row"><b>#${o.id}</b><span class="pill ${o.status==="delivered"?"g2":o.status==="cancelled"?"z":""}">${SPS[o.status]||o.status}</span><span class="mu">${new Date(o.created_at).toLocaleString("ar-EG")}</span></div>
+  <div>👤 ${E(o.name)} · ${E(o.phone)} · 📍 ${E(o.area)}</div><div>${o.items.map(i=>E(i.name)+" × "+i.qty+" ("+fm(i.price*i.qty)+")").join("، ")}</div>
+  <div class="mu">الإجمالي ${fm(+o.total)} ج.م (شامل التوصيل ${fm(+o.shipping)})${o.rider?" · الطيار: "+E(o.rider):""}${o.pin?" · كود التسليم: <b dir=\"ltr\">"+E(o.pin)+"</b>":""}</div></div>`).join(""):'<div class="mu">لسه مسجلتش أوردرات خاصة</div>'}
+$("spo").onclick=openSp;
+
+setInterval(()=>{if(M&&!document.hidden)load()},25000);
 init();
 </script>
 <script src="install.js"></script>
